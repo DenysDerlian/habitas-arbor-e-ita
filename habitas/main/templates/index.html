@@ -251,11 +251,21 @@ crossorigin=""></script>
     circleLayerGroup.clearLayers();
 
     if (clickedLayer.feature.id === clickedLayerId) {
+      // Desselecionar: volta a mostrar todas as árvores
       clickedLayer.setStyle({weight: 0,
         color: 'transparent',
         dashArray: '',
         fillOpacity: 0.0});
+      
+      // Adiciona todos os círculos de volta
+      originalCircles.forEach(circle => {
+        circleLayerGroup.addLayer(circle)
+      });
+      
+      clickedLayerId = null;
+      renderStatistics(originalCircles);
     } else {
+      // Selecionar bairro: mostra apenas árvores daquele bairro
       clickedLayer.bindTooltip(clickedLayer.feature.properties.bairro,  {permanent: true, direction: 'center', opacity: 0.5}).addTo(map);
       
       neighborhoodsLayer.resetStyle();
@@ -273,12 +283,12 @@ crossorigin=""></script>
           circleLayerGroup.addLayer(circle)
       });
   
-      circleLayerGroup.addTo(map);
-  
       clickedLayerId = clickedLayer.feature.id;
   
       renderStatistics(filteredCircles);
     }
+    
+    circleLayerGroup.addTo(map);
   }
 
   neighborhoodsLayer.eachLayer(layer => {
@@ -465,8 +475,9 @@ crossorigin=""></script>
     originalCircles.push(circle)
   }
 
-  // originalCircles.forEach(circle => circleLayerGroup.addLayer(circle));
-  // circleLayerGroup.addTo(map);
+  // Adiciona todos os círculos ao mapa inicialmente
+  originalCircles.forEach(circle => circleLayerGroup.addLayer(circle));
+  circleLayerGroup.addTo(map);
 
   renderStatistics(originalCircles);
 </script>
