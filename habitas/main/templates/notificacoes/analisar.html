@@ -87,7 +87,7 @@
       </div>
 
       <!-- Formulário de Análise Técnica (apenas para técnicos) -->
-      {% if user.nivel == 2 and notificacao.status != 'RESOLVIDA' and notificacao.status != 'ARQUIVADA' %}
+      {% if user.is_tecnico and notificacao.status != 'RESOLVIDA' and notificacao.status != 'ARQUIVADA' %}
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">
           {% if notificacao.parecer_tecnico %}Atualizar{% else %}Adicionar{% endif %} Parecer Técnico
@@ -141,7 +141,7 @@
       {% endif %}
 
       <!-- Área de Resolução (apenas para gestores com parecer técnico) -->
-      {% if user.nivel == 1 and notificacao.parecer_tecnico and notificacao.status == 'EM_ANALISE' %}
+      {% if user.is_gestor and notificacao.parecer_tecnico and notificacao.status == 'EM_ANALISE' %}
       <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-emerald-500">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Ações de Resolução</h2>
         <p class="text-gray-600 mb-4">A notificação foi analisada e está aguardando sua decisão.</p>
