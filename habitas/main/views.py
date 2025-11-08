@@ -407,15 +407,27 @@ def criar_notificacao(request, tree_id):
 @gestor_ou_tecnico_required
 def listar_notificacoes(request):
     """Lista notificações para gestores e técnicos"""
+    filters = {}
+    if request.GET.get("status"):
+        filters["status"] = request.GET.get("status")
+    if request.GET.get("tipo"):
+        filters["tipo"] = request.GET.get("tipo")
+
     if request.user.is_gestor():
-        notificacoes = Notificacao.objects.all()
+        notificacoes = Notificacao.objects.filter(
+            **filters
+        )
     else:  # Técnico
         notificacoes = Notificacao.objects.filter(
             status__in=[
                 Notificacao.StatusNotificacao.PENDENTE,
                 Notificacao.StatusNotificacao.EM_ANALISE,
-            ]
-        ) | Notificacao.objects.filter(tecnico_responsavel=request.user)
+            ],
+            **filters
+        ) | Notificacao.objects.filter(
+            tecnico_responsavel=request.user,
+            **filters
+        )
 
     notificacoes = notificacoes.select_related(
         "tree", "autor", "tecnico_responsavel"
