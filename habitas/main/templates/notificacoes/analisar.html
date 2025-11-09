@@ -41,7 +41,7 @@
             <div class="grid grid-cols-2 gap-4 text-sm mb-4">
               <div>
                 <span class="text-gray-500">Reportado por:</span>
-                <span class="font-medium ml-1">{{ notificacao.autor.first_name }} {{ notificacao.autor.last_name }}</span>
+                <span class="font-medium ml-1">{{ notificacao.autor.username }}</span>
               </div>
               <div>
                 <span class="text-gray-500">Data:</span>
@@ -50,11 +50,11 @@
               {% if notificacao.tecnico_responsavel %}
               <div>
                 <span class="text-gray-500">Técnico responsável:</span>
-                <span class="font-medium ml-1">{{ notificacao.tecnico_responsavel.first_name }} {{ notificacao.tecnico_responsavel.last_name }}</span>
+                <span class="font-medium ml-1">{{ notificacao.tecnico_responsavel.username }}</span>
               </div>
               <div>
                 <span class="text-gray-500">Data atribuição:</span>
-                <span class="font-medium ml-1">{{ notificacao.data_analise|date:"d/m/Y H:i" }}</span>
+                <span class="font-medium ml-1">{{ notificacao.data_atualizacao|date:"d/m/Y H:i" }}</span>
               </div>
               {% endif %}
             </div>
@@ -225,9 +225,9 @@
                           {% elif item.status == 'RESOLVIDA' %}bg-emerald-500
                           {% else %}bg-gray-500{% endif %}">
               </div>
-              <span class="text-xs font-semibold text-gray-900">{{ item.get_status_display }}</span>
+              <span class="text-xs font-semibold text-gray-900">{{ item.acao }}</span>
             </div>
-            <p class="text-xs text-gray-600">{{ item.data_mudanca|date:"d/m/Y H:i" }}</p>
+            <p class="text-xs text-gray-600">{{ item.data|date:"d/m/Y H:i" }}</p>
             {% if item.observacao %}
             <p class="text-xs text-gray-700 mt-1">{{ item.observacao }}</p>
             {% endif %}
