@@ -335,9 +335,9 @@ def editar_laudo(request, laudo_id):
         return redirect("meus_laudos")
 
     # Verificar se o laudo ainda pode ser editado (não aprovado/rejeitado)
-    if laudo.status in [Laudo.LaudoStatus.APROVADO, Laudo.LaudoStatus.REJEITADO]:
+    if laudo.status in [Laudo.LaudoStatus.APROVADO]:
         messages.error(
-            request, "Laudos aprovados ou rejeitados não podem ser editados."
+            request, "Laudos aprovados não podem ser editados."
         )
         return redirect("meus_laudos")
 
@@ -346,8 +346,7 @@ def editar_laudo(request, laudo_id):
         if form.is_valid():
             laudo = form.save(commit=False)
             # Manter status pendente se já estava pendente
-            if laudo.status == Laudo.LaudoStatus.RASCUNHO:
-                laudo.status = Laudo.LaudoStatus.PENDENTE
+            laudo.status = Laudo.LaudoStatus.PENDENTE
             laudo.save()
 
             messages.success(request, "Laudo atualizado com sucesso!")
@@ -380,9 +379,9 @@ def excluir_laudo(request, laudo_id):
         messages.error(request, "Você não tem permissão para excluir este laudo.")
         return redirect("meus_laudos")
 
-    if laudo.status in [Laudo.LaudoStatus.APROVADO, Laudo.LaudoStatus.REJEITADO]:
+    if laudo.status in [Laudo.LaudoStatus.APROVADO]:
         messages.error(
-            request, "Laudos aprovados ou rejeitados não podem ser excluídos."
+            request, "Laudos aprovados não podem ser excluídos."
         )
         return redirect("meus_laudos")
 
