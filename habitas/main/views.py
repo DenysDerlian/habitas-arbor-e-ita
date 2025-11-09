@@ -393,7 +393,9 @@ def criar_notificacao(request, tree_id):
 
             # Registra no histórico
             HistoricoNotificacao.objects.create(
-                notificacao=notificacao, usuario=request.user, acao="Notificação criada"
+                notificacao=notificacao,
+                usuario=request.user,
+                acao="Notificação criada",
             )
 
             messages.success(request, "Notificação enviada com sucesso!")
@@ -401,7 +403,14 @@ def criar_notificacao(request, tree_id):
     else:
         form = NotificacaoForm()
 
-    return render(request, "notificacoes/criar.html", {"form": form, "tree": tree})
+    return render(
+        request,
+        "notificacoes/criar.html",
+        {
+            "form": form,
+            "tree": tree
+        },
+    )
 
 
 @gestor_ou_tecnico_required
@@ -441,31 +450,23 @@ def analisar_notificacao(request, notificacao_id):
     """Técnico analisa notificação"""
     notificacao = get_object_or_404(Notificacao, id=notificacao_id)
 
-    # Atribui técnico se ainda não tiver
-    if not notificacao.tecnico_responsavel:
-        notificacao.tecnico_responsavel = request.user
-        notificacao.status = Notificacao.StatusNotificacao.EM_ANALISE
-        notificacao.save()
-
-        HistoricoNotificacao.objects.create(
-            notificacao=notificacao,
-            usuario=request.user,
-            acao="Análise iniciada",
-        )
-
     if request.method == "POST":
         form = ParecerTecnicoForm(request.POST, instance=notificacao)
         if form.is_valid():
-            form.save()
+            notificacao = form.save(commit=False)
+            notificacao.status = Notificacao.StatusNotificacao.EM_ANALISE
+            notificacao.tecnico_responsavel = request.user
+            notificacao.save()
 
+            # Registra no histórico
             HistoricoNotificacao.objects.create(
                 notificacao=notificacao,
                 usuario=request.user,
-                acao="Parecer técnico adicionado",
+                acao="Parecer técnico atualizado",
                 observacao=notificacao.parecer_tecnico,
             )
 
-            messages.success(request, "Parecer técnico salvo!")
+            messages.success(request, "Parecer técnico enviado com sucesso!")
             return redirect("listar_notificacoes")
     else:
         form = ParecerTecnicoForm(instance=notificacao)
