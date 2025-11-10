@@ -34,9 +34,9 @@ crossorigin=""></script>
       <label class="block mb-4">Espécie:
         <select name="species" class="w-full border rounded px-2 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-gray-800">
           <option value="">Todas</option>
-          {% for id, name in species_list %}
-            <option value="{{ id }}" {% if request.GET.species == id|stringformat:'s' %}selected{% endif %}>{{ name }}{% if species_dict and species_dict.id_to_popular and species_dict.id_to_popular.id %} ({{ species_dict.id_to_popular.id }}){% endif %}</option>
-          {% endfor %}
+            {% for nome_popular in species_list %}
+              <option value="{{ nome_popular|escape }}" {% if request.GET.species == nome_popular %}selected{% endif %}>{{ nome_popular|escape }}</option>
+            {% endfor %}
         </select>
       </label>
       <div class="mb-4"></div>

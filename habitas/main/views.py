@@ -33,7 +33,7 @@ def index(request):
     if request.GET.get("plantado_por"):
         filters["plantado_por__icontains"] = request.GET["plantado_por"]
     if request.GET.get("species"):
-        filters["species"] = request.GET["species"]
+        filters["nome_popular"] = request.GET["species"]
     if request.GET.get("altura_min"):
         filters["altura__gte"] = request.GET["altura_min"]
     if request.GET.get("altura_max"):
@@ -50,7 +50,11 @@ def index(request):
     ecosystem_services = EcosystemServiceConfig.objects.filter(ativo=True).order_by(
         "ordem_exibicao"
     )
-    species_list = Tree.objects.values_list("species__id", "species__name").distinct()
+    species_list = (
+        Tree.objects.values_list("nome_popular", flat=True)
+        .distinct()
+        .order_by("nome_popular")
+    )
     context = {
         "trees": trees,
         "ecosystem_services": ecosystem_services,
