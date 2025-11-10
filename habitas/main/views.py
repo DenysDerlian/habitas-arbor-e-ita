@@ -336,9 +336,7 @@ def editar_laudo(request, laudo_id):
 
     # Verificar se o laudo ainda pode ser editado (não aprovado/rejeitado)
     if laudo.status in [Laudo.LaudoStatus.APROVADO]:
-        messages.error(
-            request, "Laudos aprovados não podem ser editados."
-        )
+        messages.error(request, "Laudos aprovados não podem ser editados.")
         return redirect("meus_laudos")
 
     if request.method == "POST":
@@ -380,9 +378,7 @@ def excluir_laudo(request, laudo_id):
         return redirect("meus_laudos")
 
     if laudo.status in [Laudo.LaudoStatus.APROVADO]:
-        messages.error(
-            request, "Laudos aprovados não podem ser excluídos."
-        )
+        messages.error(request, "Laudos aprovados não podem ser excluídos.")
         return redirect("meus_laudos")
 
     if request.method == "POST":
@@ -430,10 +426,7 @@ def criar_notificacao(request, tree_id):
     return render(
         request,
         "notificacoes/criar.html",
-        {
-            "form": form,
-            "tree": tree
-        },
+        {"form": form, "tree": tree},
     )
 
 
@@ -447,20 +440,15 @@ def listar_notificacoes(request):
         filters["tipo"] = request.GET.get("tipo")
 
     if request.user.is_gestor():
-        notificacoes = Notificacao.objects.filter(
-            **filters
-        )
+        notificacoes = Notificacao.objects.filter(**filters)
     else:  # Técnico
         notificacoes = Notificacao.objects.filter(
             status__in=[
                 Notificacao.StatusNotificacao.PENDENTE,
                 Notificacao.StatusNotificacao.EM_ANALISE,
             ],
-            **filters
-        ) | Notificacao.objects.filter(
-            tecnico_responsavel=request.user,
-            **filters
-        )
+            **filters,
+        ) | Notificacao.objects.filter(tecnico_responsavel=request.user, **filters)
 
     notificacoes = notificacoes.select_related(
         "tree", "autor", "tecnico_responsavel"

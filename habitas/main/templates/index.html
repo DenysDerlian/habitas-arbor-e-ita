@@ -26,7 +26,7 @@ crossorigin=""></script>
   <div class="col-span-1 mx-2 px-6 items-center scrollbar-thin scrollbar scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-clip-content border h-[calc(93vh-90px)]" style="overflow-y: auto;max-height: 100vh;">
     <div class="flex flex-row justify-between my-2">
   <button id="tab-info" type="button" class="px-4 py-2 rounded bg-emerald-600 text-white" onclick="showSidebarTab('info')">Informações</button>
-  <button id="tab-filter" type="button" class="px-4 py-2 rounded bg-gray-200 text-emerald-900" onclick="showSidebarTab('filter')">Filtrar</button>
+  <button id="tab-filter" type="button" class="px-4 py-2 rounded bg-gray-200 text-emerald-900" onclick="showSidebarTab('filter')">Filtros</button>
     </div>
   <div id="sidebar-filter" style="display:none;">
     <h1 class="text-3xl text-left font-bold my-2 w-fit">Árvores de SJC<hr class="bg-emerald-600 h-2.5 w-full my-2" /></h1>
@@ -40,25 +40,25 @@ crossorigin=""></script>
         </select>
       </label>
       <div class="mb-4"></div>
-        <label>Altura mínima:
+        <label>Altura mínima (m):
           <div class="flex flex-row items-center gap-1">
             <input type="number" step="any" name="altura_min" value="{{ request.GET.altura_min }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
             <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
           </div>
         </label><br>
-        <label>Altura máxima:
+        <label>Altura máxima (m):
           <div class="flex flex-row items-center gap-1">
             <input type="number" step="any" name="altura_max" value="{{ request.GET.altura_max }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
             <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
           </div>
         </label><br>
-        <label>DAP mínimo:
+        <label>DAP mínimo (cm):
           <div class="flex flex-row items-center gap-1">
             <input type="number" name="dap_min" value="{{ request.GET.dap_min }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
             <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
           </div>
         </label><br>
-        <label>DAP máximo:
+        <label>DAP máximo (cm):
           <div class="flex flex-row items-center gap-1">
             <input type="number" name="dap_max" value="{{ request.GET.dap_max }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
             <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
@@ -89,7 +89,6 @@ crossorigin=""></script>
        <p class="text-left " id="dados">
         </p>
         <div id="acoes-container"></div> 
-        </p>
         <h2 class="text-2xl text-left font-medium my-4 w-fit">
           Comentários
           <hr class="bg-emerald-900 h-1.5 w-full" />
