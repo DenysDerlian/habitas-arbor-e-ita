@@ -76,10 +76,9 @@ class ParecerTecnicoForm(forms.ModelForm):
     """Formulário para técnicos adicionarem pareceres"""
     class Meta:
         model = Notificacao
-        fields = ['parecer_tecnico', 'status']
+        fields = ['parecer_tecnico']
         widgets = {
             'parecer_tecnico': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
-            'status': forms.Select(attrs={'class': 'form-control'}),
         }
 
 

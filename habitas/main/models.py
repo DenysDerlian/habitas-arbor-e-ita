@@ -77,6 +77,17 @@ class CustomUser(AbstractUser):
 
 
 class Tree(models.Model):
+    class OrigemChoices(models.TextChoices):
+        NATIVA = 'nativa', 'Nativa'
+        EXOTICA = 'exotica', 'Exótica'
+        DESCONHECIDA = 'desconhecida', 'Desconhecida'
+
+    origem = models.CharField(
+        max_length=20,
+        choices=OrigemChoices.choices,
+        default=OrigemChoices.DESCONHECIDA,
+        verbose_name='Origem'
+    )
     N_placa = models.FloatField(default=0)
     nome_popular = models.CharField(max_length=255)
     nome_cientifico = models.CharField(max_length=255)

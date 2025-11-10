@@ -23,62 +23,98 @@ crossorigin=""></script>
 {% endblock %} {% block title %} Habitas {% endblock %} {% block content %}
 
 <div class="grid grid-cols-4 my-4 scrollbar-thin scrollbar scrollbar-thumb-gray-300" style="overflow-y: auto;max-height: 100vh;">
-  <div
-    class="col-span-1 mx-2 px-6 items-center scrollbar-thin scrollbar scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-clip-content border h-[calc(93vh-90px)]"
-    style="overflow-y: auto;max-height: 100vh;">
-    <h1 class="text-3xl text-left font-bold my-2 w-fit">
-      Árvores de SJC
-      <hr class="bg-emerald-600 h-2.5 w-full my-2" />
-    </h1>
-    <p class="text-left text-xl font-medium my-2">
-      Aprenda sobre as árvores de sua vizinhança.
-    </p>
-    <p class="text-left font-light">
-      Pela primeira vez, você tem acesso a informações sobre as árvores 
-      de São José dos Campos. Aprenda sobre as árvores que compõem a floresta urbana da nossa cidade.
-    </p>
-    <h1 class="text-2xl text-left font-medium my-4 w-fit">
-      Estatísticas gerais
-      <hr class="bg-emerald-900 h-1.5 w-full" />
-    </h1>
-
-    <div class="grid grid-cols-3" id="estatisticas-gerais">
+  <div class="col-span-1 mx-2 px-6 items-center scrollbar-thin scrollbar scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-clip-content border h-[calc(93vh-90px)]" style="overflow-y: auto;max-height: 100vh;">
+    <div class="flex flex-row justify-between my-2">
+  <button id="tab-info" type="button" class="px-4 py-2 rounded bg-emerald-600 text-white" onclick="showSidebarTab('info')">Informações</button>
+  <button id="tab-filter" type="button" class="px-4 py-2 rounded bg-gray-200 text-emerald-900" onclick="showSidebarTab('filter')">Filtros</button>
     </div>
-
-    <h1 class="text-2xl text-left font-medium my-4 w-fit">
-      Benefícios ecológicos
-      <hr class="bg-emerald-900 h-1.5 w-full" />
-    </h1>
-
-    <div id="estatisticas-ecologicas">
+  <div id="sidebar-filter" style="display:none;">
+    <h1 class="text-3xl text-left font-bold my-2 w-fit">Árvores de SJC<hr class="bg-emerald-600 h-2.5 w-full my-2" /></h1>
+    <form method="get" class="mb-4">
+      <label class="block mb-4">Espécie:
+        <select name="species" class="w-full border rounded px-2 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-gray-800">
+          <option value="">Todas</option>
+            {% for nome_popular in species_list %}
+              <option value="{{ nome_popular|escape }}" {% if request.GET.species == nome_popular %}selected{% endif %}>{{ nome_popular|escape }}</option>
+            {% endfor %}
+        </select>
+      </label>
+      <label class="block mb-4">Origem:
+        <select name="origem" class="w-full border rounded px-2 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-gray-800">
+          <option value="">Todas</option>
+          <option value="nativa" {% if request.GET.origem == 'nativa' %}selected{% endif %}>Nativa</option>
+          <option value="exotica" {% if request.GET.origem == 'exotica' %}selected{% endif %}>Exótica</option>
+          <option value="desconhecida" {% if request.GET.origem == 'desconhecida' %}selected{% endif %}>Desconhecida</option>
+        </select>
+      </label>
+      <label class="block mb-4 flex items-center">
+        <input type="checkbox" name="laudo_only" value="1" {% if request.GET.laudo_only %}checked{% endif %} class="mr-2" />
+        Exibir apenas árvores com laudo
+      </label>
+      <div class="mb-4"></div>
+        <label>Altura mínima (m):
+          <div class="flex flex-row items-center gap-1">
+            <input type="number" step="any" name="altura_min" value="{{ request.GET.altura_min }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
+            <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
+          </div>
+        </label><br>
+        <label>Altura máxima (m):
+          <div class="flex flex-row items-center gap-1">
+            <input type="number" step="any" name="altura_max" value="{{ request.GET.altura_max }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
+            <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
+          </div>
+        </label><br>
+        <label>DAP mínimo (cm):
+          <div class="flex flex-row items-center gap-1">
+            <input type="number" name="dap_min" value="{{ request.GET.dap_min }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
+            <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
+          </div>
+        </label><br>
+        <label>DAP máximo (cm):
+          <div class="flex flex-row items-center gap-1">
+            <input type="number" name="dap_max" value="{{ request.GET.dap_max }}" class="border rounded px-2 py-1" placeholder="Sem limite" />
+            <button type="button" onclick="this.previousElementSibling.value='';" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
+          </div>
+        </label><br>
+        <label>Plantado por:
+        <div class="flex flex-row items-center gap-1">
+          <input type="text" name="plantado_por" id="plantado_por_input" value="{{ request.GET.plantado_por }}" class="border rounded px-2 py-1" />
+          <button type="button" onclick="document.getElementById('plantado_por_input').value = ''" class="text-xs px-2 py-1 border rounded bg-gray-100">Limpar</button>
+        </div>
+      </label><br>
+      <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded mt-2">Filtrar</button>
+    </form>
     </div>
-
-
-    <div id="estatisticas" style="display:none;">
-      <h1 class="text-2xl text-left font-medium my-4 w-fit">
-        Informações sobre a árvore
-        <hr class="bg-emerald-900 h-1.5 w-full" />
-      </h1>
-      <h1 class="text-2xl text-left font-medium my-4 w-fit" id="nome_popular">
-        <hr class="bg-emerald-900 h-1.5 w-full"/>
-      </h1>
-     <p class="text-left " id="dados">
-      </p>
-      <div id="acoes-container"></div> 
-      </p>
-      <h2 class="text-2xl text-left font-medium my-4 w-fit">
-        Comentários
-        <hr class="bg-emerald-900 h-1.5 w-full" />
-      </h2>
-      {% unicorn 'posts' %}
+  <div id="sidebar-info" style="display:block;">
+      <h1 class="text-3xl text-left font-bold my-2 w-fit">Árvores de SJC<hr class="bg-emerald-600 h-2.5 w-full my-2" /></h1>
+      <p class="text-left text-xl font-medium my-2">Aprenda sobre as árvores de sua vizinhança.</p>
+      <p class="text-left font-light">Pela primeira vez, você tem acesso a informações sobre as árvores de São José dos Campos. Aprenda sobre as árvores que compõem a floresta urbana da nossa cidade.</p>
+      <h1 class="text-2xl text-left font-medium my-4 w-fit">Estatísticas gerais<hr class="bg-emerald-900 h-1.5 w-full" /></h1>
+      <div class="grid grid-cols-3" id="estatisticas-gerais"></div>
+      <h1 class="text-2xl text-left font-medium my-4 w-fit">Benefícios ecológicos<hr class="bg-emerald-900 h-1.5 w-full" /></h1>
+      <div id="estatisticas-ecologicas"></div>
+      <div id="estatisticas" style="display:none;">
+        <h1 class="text-2xl text-left font-medium my-4 w-fit">Informações sobre a árvore<hr class="bg-emerald-900 h-1.5 w-full" /></h1>
+        <h1 class="text-2xl text-left font-medium my-4 w-fit" id="nome_popular">
+          <hr class="bg-emerald-900 h-1.5 w-full"/>
+        </h1>
+       <p class="text-left " id="dados">
+        </p>
+        <div id="acoes-container"></div> 
+        <h2 class="text-2xl text-left font-medium my-4 w-fit">
+          Comentários
+          <hr class="bg-emerald-900 h-1.5 w-full" />
+        </h2>
+        {% unicorn 'posts' %}
+      </div>
+      <div class="info-container">
+        <div class="info-header">Referências Científicas</div>
+        {% for service in ecosystem_services %}
+        <div>{{ service.nome }}: {{ service.referencia_cientifica|truncatewords:10 }}</div>
+        {% endfor %}
+      </div>
     </div>
-
-    <div class="info-container">
-      <div class="info-header">Referências Científicas</div>
-      {% for service in ecosystem_services %}
-      <div>{{ service.nome }}: {{ service.referencia_cientifica|truncatewords:10 }}</div>
-      {% endfor %}
-    </div>
+    
   </div>
   <div class="z-0 col-span-3 pr-2 h-screen">
     <div id="map" class="z-0 min-w-max"></div>
@@ -92,6 +128,31 @@ crossorigin=""></script>
 </div>
 
 <script>
+  // Show Informações tab by default on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    showSidebarTab('info');
+  });
+  function showSidebarTab(tab) {
+    const filterTab = document.getElementById('sidebar-filter');
+    const infoTab = document.getElementById('sidebar-info');
+    const btnFilter = document.getElementById('tab-filter');
+    const btnInfo = document.getElementById('tab-info');
+    if (tab === 'filter') {
+      filterTab.style.display = 'block';
+      infoTab.style.display = 'none';
+      btnFilter.classList.add('bg-emerald-600', 'text-white');
+      btnFilter.classList.remove('bg-gray-200', 'text-emerald-900');
+      btnInfo.classList.add('bg-gray-200', 'text-emerald-900');
+      btnInfo.classList.remove('bg-emerald-600', 'text-white');
+    } else {
+      filterTab.style.display = 'none';
+      infoTab.style.display = 'block';
+      btnInfo.classList.add('bg-emerald-600', 'text-white');
+      btnInfo.classList.remove('bg-gray-200', 'text-emerald-900');
+      btnFilter.classList.add('bg-gray-200', 'text-emerald-900');
+      btnFilter.classList.remove('bg-emerald-600', 'text-white');
+    }
+  }
   // Serviços ecossistêmicos dinâmicos do BD
   const ecosystemServicesConfig = {
     {% for service in ecosystem_services %}
