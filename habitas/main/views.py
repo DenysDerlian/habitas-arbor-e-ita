@@ -34,6 +34,11 @@ def index(request):
         filters["plantado_por__icontains"] = request.GET["plantado_por"]
     if request.GET.get("species"):
         filters["nome_popular"] = request.GET["species"]
+    if request.GET.get("origem"):
+        filters["origem"] = request.GET["origem"]
+    if request.GET.get("laudo_only"):
+        filters["laudo__isnull"] = False
+        filters["laudo__gt"] = ""
     if request.GET.get("altura_min"):
         filters["altura__gte"] = request.GET["altura_min"]
     if request.GET.get("altura_max"):

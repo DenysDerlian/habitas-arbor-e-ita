@@ -39,6 +39,18 @@ crossorigin=""></script>
             {% endfor %}
         </select>
       </label>
+      <label class="block mb-4">Origem:
+        <select name="origem" class="w-full border rounded px-2 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-gray-800">
+          <option value="">Todas</option>
+          <option value="nativa" {% if request.GET.origem == 'nativa' %}selected{% endif %}>Nativa</option>
+          <option value="exotica" {% if request.GET.origem == 'exotica' %}selected{% endif %}>Exótica</option>
+          <option value="desconhecida" {% if request.GET.origem == 'desconhecida' %}selected{% endif %}>Desconhecida</option>
+        </select>
+      </label>
+      <label class="block mb-4 flex items-center">
+        <input type="checkbox" name="laudo_only" value="1" {% if request.GET.laudo_only %}checked{% endif %} class="mr-2" />
+        Exibir apenas árvores com laudo
+      </label>
       <div class="mb-4"></div>
         <label>Altura mínima (m):
           <div class="flex flex-row items-center gap-1">
