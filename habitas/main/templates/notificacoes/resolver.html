@@ -37,7 +37,7 @@
             </div>
             <div>
               <span class="text-gray-500">Autor:</span>
-              <span class="font-medium ml-1">{{ notificacao.autor.first_name }} {{ notificacao.autor.last_name }}</span>
+              <span class="font-medium ml-1">{{ notificacao.autor.username }}</span>
             </div>
             <div>
               <span class="text-gray-500">Data Criação:</span>
@@ -46,7 +46,7 @@
             {% if notificacao.tecnico_responsavel %}
             <div>
               <span class="text-gray-500">Técnico:</span>
-              <span class="font-medium ml-1">{{ notificacao.tecnico_responsavel.first_name }} {{ notificacao.tecnico_responsavel.last_name }}</span>
+              <span class="font-medium ml-1">{{ notificacao.tecnico_responsavel.username }}</span>
             </div>
             {% endif %}
           </div>

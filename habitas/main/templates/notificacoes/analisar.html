@@ -41,7 +41,7 @@
             <div class="grid grid-cols-2 gap-4 text-sm mb-4">
               <div>
                 <span class="text-gray-500">Reportado por:</span>
-                <span class="font-medium ml-1">{{ notificacao.autor.first_name }} {{ notificacao.autor.last_name }}</span>
+                <span class="font-medium ml-1">{{ notificacao.autor.username }}</span>
               </div>
               <div>
                 <span class="text-gray-500">Data:</span>
@@ -50,11 +50,11 @@
               {% if notificacao.tecnico_responsavel %}
               <div>
                 <span class="text-gray-500">Técnico responsável:</span>
-                <span class="font-medium ml-1">{{ notificacao.tecnico_responsavel.first_name }} {{ notificacao.tecnico_responsavel.last_name }}</span>
+                <span class="font-medium ml-1">{{ notificacao.tecnico_responsavel.username }}</span>
               </div>
               <div>
                 <span class="text-gray-500">Data atribuição:</span>
-                <span class="font-medium ml-1">{{ notificacao.data_analise|date:"d/m/Y H:i" }}</span>
+                <span class="font-medium ml-1">{{ notificacao.data_atualizacao|date:"d/m/Y H:i" }}</span>
               </div>
               {% endif %}
             </div>
@@ -87,7 +87,7 @@
       </div>
 
       <!-- Formulário de Análise Técnica (apenas para técnicos) -->
-      {% if user.nivel == 2 and notificacao.status != 'RESOLVIDA' and notificacao.status != 'ARQUIVADA' %}
+      {% if user.is_tecnico and notificacao.status != 'RESOLVIDA' and notificacao.status != 'ARQUIVADA' %}
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">
           {% if notificacao.parecer_tecnico %}Atualizar{% else %}Adicionar{% endif %} Parecer Técnico
@@ -141,7 +141,7 @@
       {% endif %}
 
       <!-- Área de Resolução (apenas para gestores com parecer técnico) -->
-      {% if user.nivel == 1 and notificacao.parecer_tecnico and notificacao.status == 'EM_ANALISE' %}
+      {% if user.is_gestor and notificacao.parecer_tecnico and notificacao.status == 'EM_ANALISE' %}
       <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-emerald-500">
         <h2 class="text-xl font-bold text-gray-900 mb-4">Ações de Resolução</h2>
         <p class="text-gray-600 mb-4">A notificação foi analisada e está aguardando sua decisão.</p>
@@ -225,9 +225,9 @@
                           {% elif item.status == 'RESOLVIDA' %}bg-emerald-500
                           {% else %}bg-gray-500{% endif %}">
               </div>
-              <span class="text-xs font-semibold text-gray-900">{{ item.get_status_display }}</span>
+              <span class="text-xs font-semibold text-gray-900">{{ item.acao }}</span>
             </div>
-            <p class="text-xs text-gray-600">{{ item.data_mudanca|date:"d/m/Y H:i" }}</p>
+            <p class="text-xs text-gray-600">{{ item.data|date:"d/m/Y H:i" }}</p>
             {% if item.observacao %}
             <p class="text-xs text-gray-700 mt-1">{{ item.observacao }}</p>
             {% endif %}
