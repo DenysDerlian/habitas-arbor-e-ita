@@ -1,0 +1,264 @@
+{% extends '_base.html' %}
+
+{% block title %}Política de Privacidade - Habitas{% endblock %}
+
+{% block header %}
+<style>
+  /* Override necessário porque o reset do Tailwind remove o estilo das listas */
+  .policy-content ul {
+    list-style: disc !important;
+    padding-left: 1.5rem !important;
+    margin-left: 0 !important;
+  }
+  .policy-content ul li {
+    display: list-item !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="w-full px-4 py-10 flex justify-center lg:justify-end">
+  <div class="policy-content w-full sm:w-11/12 md:w-4/5 lg:w-2/4 xl:w-2/5 bg-white shadow-lg rounded-2xl p-8 md:p-10 border border-gray-100 lg:mr-10">
+
+    <h1 class="text-3xl md:text-4xl font-serif font-bold text-emerald-700 mb-2">
+      Política de Privacidade
+    </h1>
+
+    <p class="text-gray-500 mb-8">
+      Última atualização: <span class="font-medium">16 de novembro de 2025</span>
+    </p>
+
+    <div class="space-y-10 text-gray-700 leading-relaxed">
+
+      <!-- 1 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">1. Dados pessoais coletados</h2>
+
+        <p class="mb-3">
+          O Habitas coleta apenas os dados pessoais estritamente necessários ao funcionamento adequado da plataforma
+          e às responsabilidades institucionais relacionadas à gestão da arborização urbana. A coleta é realizada de
+          forma transparente e proporcional, considerando as funções de cada tipo de usuário — cidadãos, técnicos e
+          gestores públicos.
+        </p>
+
+        <p class="mb-3">
+          Os dados coletados permitem identificar o usuário, registrar suas ações dentro do sistema e trazer
+          rastreabilidade às atividades de interesse público. Além das informações enviadas pelo próprio usuário,
+          a plataforma também registra eventos técnicos (como datas e horários de uso), necessários para fins de
+          auditoria e segurança.
+        </p>
+
+        <ul class="space-y-1">
+          <li>Nome completo</li>
+          <li>E-mail</li>
+          <li>CPF</li>
+          <li>Comentários e notificações enviadas pelos cidadãos</li>
+          <li>Laudos, pareceres e observações inseridos por técnicos</li>
+          <li>Ações administrativas registradas por gestores</li>
+        </ul>
+
+        <p class="mt-3">
+          Também podem ser coletados dados técnicos de uso, como endereço IP, navegador utilizado e horário de acesso,
+          sempre com a finalidade exclusiva de auditoria, segurança e prevenção de uso indevido da plataforma.
+        </p>
+      </section>
+
+      <!-- 2 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">2. Como os dados são coletados</h2>
+
+        <p>
+          Os dados são fornecidos diretamente pelo usuário ou gerados pelas interações realizadas na plataforma,
+          considerando o papel desempenhado por cada tipo de acesso. A coleta ocorre de forma clara e vinculada a
+          ações explícitas, sem mecanismos ocultos ou rastreamento indevido.
+        </p>
+
+        <ul class="space-y-1 mt-2">
+          <li>Preenchimento do formulário de cadastro</li>
+          <li>Envio de comentários, notificações ou observações sobre árvores</li>
+          <li>Criação de laudos e informações técnicas</li>
+          <li>Ações administrativas realizadas por gestores</li>
+        </ul>
+
+        <p class="mt-3">
+          Além disso, informações de segurança, como logs de acesso e registros operacionais, podem ser coletadas
+          automaticamente para fins de auditoria e integridade do sistema.
+        </p>
+
+        <p class="mt-3">
+          O Habitas não utiliza cookies de terceiros, ferramentas de monitoramento invisíveis ou qualquer tipo de
+          rastreamento voltado para publicidade ou perfil comportamental.
+        </p>
+      </section>
+
+      <!-- 3 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">3. Finalidades do tratamento</h2>
+
+        <p>
+          Os dados pessoais tratados pelo Habitas são utilizados exclusivamente para fins relacionados à gestão
+          municipal da arborização urbana e ao bom funcionamento da plataforma. Toda utilização está diretamente
+          vinculada às responsabilidades legais e administrativas do poder público.
+        </p>
+
+        <ul class="space-y-1 mt-2">
+          <li>Identificação e autenticação de usuários</li>
+          <li>Permitir a participação comunitária por meio de comentários e notificações</li>
+          <li>Registrar, analisar e validar laudos técnicos elaborados por profissionais autorizados</li>
+          <li>Gerenciar permissões e níveis de acesso dentro da plataforma</li>
+          <li>Atender obrigações legais, regulatórias e de transparência pública</li>
+          <li>Fornecer suporte a ações administrativas relacionadas à arborização urbana</li>
+        </ul>
+
+        <p class="mt-3">
+          Os dados também podem ser utilizados para melhorias técnicas no sistema, desde que preservada
+          a privacidade dos usuários e sem qualquer finalidade comercial.
+        </p>
+      </section>
+
+      <!-- 4 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">4. Bases legais</h2>
+
+        <p class="mb-3">
+          O tratamento de dados realizados pelo Habitas está fundamentado nas hipóteses legais previstas
+          na Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018), especialmente considerando
+          o caráter público e institucional do sistema.
+        </p>
+
+        <ul class="space-y-1 mt-2">
+          <li>Execução de políticas públicas relacionadas à gestão ambiental</li>
+          <li>Cumprimento de obrigações legais pela administração pública</li>
+          <li>Desempenho de atividades administrativas e técnicas essenciais</li>
+          <li>Consentimento do usuário, quando necessário (ex.: envio voluntário de comentários)</li>
+        </ul>
+
+        <p class="mt-3">
+          Todos os tratamentos respeitam os princípios legais de necessidade, adequação,
+          finalidade e transparência.
+        </p>
+      </section>
+
+      <!-- 5 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">5. Compartilhamento de dados</h2>
+
+        <p>
+          Os dados pessoais tratados pelo Habitas não são compartilhados com empresas privadas,
+          anunciantes ou parceiros comerciais. O compartilhamento ocorre apenas quando necessário
+          para cumprimento de obrigações legais, determinação judicial ou execução de políticas públicas.
+        </p>
+
+        <p class="mt-3">
+          Em nenhuma situação os dados serão utilizados para publicidade, marketing ou fins não
+          relacionados à atividade institucional da plataforma.
+        </p>
+      </section>
+
+      <!-- 6 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">6. Armazenamento e segurança</h2>
+
+        <p class="mb-3">
+          Todos os dados são armazenados em infraestrutura de nuvem segura, utilizada pelo poder público
+          ou por serviços contratados para este fim. A plataforma adota medidas de segurança como controle
+          de acesso, criptografia, registro de logs e mecanismos de integridade.
+        </p>
+
+        <p>
+          Embora nenhuma solução tecnológica seja inteiramente imune a incidentes, o Habitas adota
+          práticas adequadas para redução de riscos, auditoria contínua e proteção contra acessos
+          indevidos.
+        </p>
+      </section>
+
+      <!-- 7 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">7. Prazo de retenção</h2>
+
+        <p class="mb-3">
+          Os dados pessoais são mantidos pelo tempo necessário ao cumprimento de suas finalidades e de
+          acordo com obrigações legais e administrativas aplicáveis:
+        </p>
+
+        <ul class="space-y-1">
+          <li><strong>Dados cadastrais:</strong> retidos enquanto a conta estiver ativa e pelo período mínimo necessário após sua desativação.</li>
+          <li><strong>Comentários e notificações:</strong> preservados como registros públicos de interesse coletivo.</li>
+          <li><strong>Laudos técnicos e registros administrativos:</strong> mantidos conforme normas municipais e legislações aplicáveis.</li>
+        </ul>
+
+        <p class="mt-3">
+          Sempre que possível, dados antigos ou não mais necessários podem ser anonimizados para fins estatísticos.
+        </p>
+      </section>
+
+      <!-- 8 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">8. Direitos do titular</h2>
+
+        <p class="mb-3">
+          Em conformidade com a LGPD, o usuário tem assegurado o direito de solicitar informações sobre o uso
+          de seus dados pessoais. Entre os direitos garantidos, incluem-se:
+        </p>
+
+        <ul class="space-y-1 mt-2">
+          <li>Acesso aos dados tratados</li>
+          <li>Correção de informações desatualizadas ou incorretas</li>
+          <li>Esclarecimentos sobre as finalidades do tratamento</li>
+          <li>Solicitação de exclusão ou anonimização de dados, quando aplicável</li>
+          <li>Informações sobre compartilhamento com órgãos públicos</li>
+        </ul>
+
+        <p class="mt-3">
+          Algumas solicitações podem ser limitadas quando envolverem obrigações legais, interesse público
+          ou continuidade de políticas públicas essenciais.
+        </p>
+      </section>
+
+      <!-- 9 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">9. Canal de contato</h2>
+
+        <p>
+          Para solicitações, dúvidas ou pedidos relacionados à privacidade e ao tratamento de dados pessoais,
+          o usuário pode entrar em contato com o <strong>administrador do sistema</strong>, cujo endereço de e-mail
+          está disponível na própria plataforma. O atendimento será realizado em prazo razoável, conforme a
+          complexidade da solicitação.
+        </p>
+      </section>
+
+      <!-- 10 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">10. Dados de menores</h2>
+
+        <p>
+          O Habitas não é destinado a menores de 18 anos. Caso seja identificado que um menor realizou cadastro
+          ou inseriu informações pessoais, os dados envolvidos serão removidos após verificação, conforme
+          determina a legislação aplicável.
+        </p>
+      </section>
+
+      <!-- 11 -->
+      <section>
+        <h2 class="text-2xl font-semibold text-emerald-700 mb-3">11. Alterações desta Política</h2>
+
+        <p>
+          Esta Política de Privacidade pode ser revista e atualizada periodicamente para refletir mudanças
+          legislativas, ajustes administrativos ou melhorias na plataforma. Quando alterações significativas
+          ocorrerem, um aviso será disponibilizado no próprio sistema para garantir a transparência com os
+          usuários.
+        </p>
+      </section>
+
+    </div>
+
+    <div class="mt-10">
+      <a href="{% url 'index' %}" 
+         class="inline-flex items-center gap-2 text-emerald-700 font-medium hover:underline">
+        ← Voltar
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
