@@ -13,6 +13,9 @@ END_ID = 85000  # Pode ir além de 80k para garantir
 DELAY_BETWEEN_REQUESTS = 0.5  # segundos (para não sobrecarregar o servidor)
 SAVE_INTERVAL = 50  # salvar a cada 50 registros
 
+# Modo de operação: False = sem checagem de gaps (usa último ID), True = com checagem de gaps (verifica todos os IDs)
+CHECK_GAPS = False  # Hardcoded para não checar gaps por enquanto
+
 def get_last_id_from_csv():
     """Obtém o último ID já coletado no CSV"""
     try:
@@ -26,6 +29,21 @@ def get_last_id_from_csv():
         print(f"Erro ao ler CSV: {e}")
         return 0
     return 0
+
+def get_existing_ids_from_csv():
+    """Obtém todos os IDs já coletados no CSV (para modo com checagem de gaps)"""
+    existing_ids = set()
+    try:
+        if CSV_FILE.exists():
+            with open(CSV_FILE, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f, delimiter=';')
+                next(reader)  # Pula o cabeçalho
+                for row in reader:
+                    if row and row[0].isdigit():
+                        existing_ids.add(int(row[0]))
+    except Exception as e:
+        print(f"Erro ao ler CSV: {e}")
+    return existing_ids
 
 def clean_text(text):
     """Limpa e normaliza o texto"""
@@ -148,67 +166,133 @@ def append_to_csv(data):
             data['image_sources']
         ])
 
-def main():
-    """Função principal do scraper"""
-    print("=" * 60)
-    print("Web Scraper - Árvores de São José dos Campos")
-    print("=" * 60)
+def run_scraper(check_gaps=None, verbose=True):
+    """
+    Executa o scraper e retorna estatísticas
     
-    # Determina o ID inicial
-    last_id = get_last_id_from_csv()
-    start_id = last_id + 1
+    Args:
+        check_gaps: Se True, verifica todos os IDs existentes. Se False, usa apenas o último ID.
+                   Se None, usa o valor de CHECK_GAPS.
+        verbose: Se True, imprime logs. Se False, executa silenciosamente.
     
-    print(f"\nÚltimo ID no CSV: {last_id}")
-    print(f"Iniciando coleta a partir do ID: {start_id}")
-    print(f"ID final: {END_ID}")
-    print(f"Total estimado de registros a coletar: {END_ID - start_id + 1}")
-    print("-" * 60)
+    Returns:
+        dict: Estatísticas da coleta {'collected': int, 'not_found': int, 'skipped': int}
+    """
+    if check_gaps is None:
+        check_gaps = CHECK_GAPS
+    
+    if verbose:
+        print("=" * 60)
+        print("Web Scraper - Árvores de São José dos Campos")
+        print("=" * 60)
     
     collected = 0
     not_found = 0
+    skipped = 0
     consecutive_not_found = 0
     max_consecutive_not_found = 100  # Para após 100 IDs consecutivos não encontrados
     
+    # Determina o ID inicial baseado no modo
+    if check_gaps:
+        # Modo com checagem de gaps: verifica todos os IDs existentes
+        if verbose:
+            print("\nCarregando IDs já coletados...")
+        existing_ids = get_existing_ids_from_csv()
+        if verbose:
+            print(f"Encontrados {len(existing_ids)} IDs já no CSV.")
+        
+        if existing_ids:
+            min_id = min(existing_ids)
+            max_id = max(existing_ids)
+            if verbose:
+                print(f"Faixa de IDs no CSV: {min_id} a {max_id}")
+        
+        start_id = START_ID
+        if verbose:
+            print(f"\nModo: COM checagem de gaps")
+            print(f"Iniciando coleta a partir do ID: {start_id}")
+    else:
+        # Modo sem checagem de gaps: usa apenas o último ID
+        last_id = get_last_id_from_csv()
+        start_id = last_id + 1
+        existing_ids = set()
+        if verbose:
+            print(f"\nModo: SEM checagem de gaps")
+            print(f"Último ID no CSV: {last_id}")
+            print(f"Iniciando coleta a partir do ID: {start_id}")
+    
+    if verbose:
+        print(f"ID final: {END_ID}")
+        print("-" * 60)
+    
     for tree_id in range(start_id, END_ID + 1):
-        print(f"\nColetando ID {tree_id}...", end=' ')
+        # Se estiver checando gaps, pula IDs já coletados
+        if check_gaps and tree_id in existing_ids:
+            skipped += 1
+            if verbose and skipped % 1000 == 0:
+                print(f"Pulados: {skipped} (já coletados) | Coletados: {collected} | Não encontrados: {not_found}")
+            continue
+        
+        if verbose:
+            print(f"\nColetando ID {tree_id}...", end=' ')
         
         data = extract_tree_data(tree_id)
         
         if data:
             append_to_csv(data)
+            if check_gaps:
+                existing_ids.add(tree_id)  # Adiciona ao conjunto para evitar duplicatas na mesma execução
             collected += 1
             consecutive_not_found = 0
-            print(f"✓ Coletado ({collected} total)")
+            if verbose:
+                print(f"✓ Coletado ({collected} total)")
             
             # Log a cada 10 registros
-            if collected % 10 == 0:
+            if verbose and collected % 10 == 0:
                 print(f"\n{'='*60}")
                 print(f"Progresso: {collected} árvores coletadas")
+                if check_gaps:
+                    print(f"Pulados (já coletados): {skipped}")
                 print(f"Não encontrados: {not_found}")
                 print(f"{'='*60}")
         else:
             not_found += 1
             consecutive_not_found += 1
-            print(f"✗ Não encontrado")
+            if verbose:
+                print(f"✗ Não encontrado")
             
             # Para se houver muitos IDs consecutivos não encontrados
             if consecutive_not_found >= max_consecutive_not_found:
-                print(f"\n{'='*60}")
-                print(f"AVISO: {max_consecutive_not_found} IDs consecutivos não encontrados.")
-                print(f"Provavelmente chegamos ao fim do cadastro.")
-                print(f"Último ID válido: {tree_id - max_consecutive_not_found}")
-                print(f"{'='*60}")
+                if verbose:
+                    print(f"\n{'='*60}")
+                    print(f"AVISO: {max_consecutive_not_found} IDs consecutivos não encontrados.")
+                    print(f"Provavelmente chegamos ao fim do cadastro.")
+                    print(f"Último ID válido: {tree_id - max_consecutive_not_found}")
+                    print(f"{'='*60}")
                 break
         
         # Aguarda entre requisições para não sobrecarregar o servidor
         time.sleep(DELAY_BETWEEN_REQUESTS)
     
-    print("\n" + "=" * 60)
-    print("Coleta finalizada!")
-    print(f"Total de árvores coletadas: {collected}")
-    print(f"IDs não encontrados: {not_found}")
-    print(f"CSV salvo em: {CSV_FILE}")
-    print("=" * 60)
+    if verbose:
+        print("\n" + "=" * 60)
+        print("Coleta finalizada!")
+        print(f"Total de árvores coletadas: {collected}")
+        if check_gaps:
+            print(f"IDs pulados (já coletados): {skipped}")
+        print(f"IDs não encontrados: {not_found}")
+        print(f"CSV salvo em: {CSV_FILE}")
+        print("=" * 60)
+    
+    return {
+        'collected': collected,
+        'not_found': not_found,
+        'skipped': skipped if check_gaps else 0
+    }
+
+def main():
+    """Função principal do scraper (para uso via linha de comando)"""
+    run_scraper(check_gaps=CHECK_GAPS, verbose=True)
 
 if __name__ == "__main__":
     try:

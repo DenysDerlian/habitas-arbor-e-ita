@@ -12,6 +12,7 @@ urlpatterns = [
     
     # Dashboards
     path('dashboard/gestor/', views.dashboard_gestor, name='dashboard_gestor'),
+    path('dashboard/gestor/atualizar-arvores/', views.atualizar_arvores, name='atualizar_arvores'),
     path('dashboard/tecnico/', views.dashboard_tecnico, name='dashboard_tecnico'),
     
     # Gestão de Técnicos (Nível 1)

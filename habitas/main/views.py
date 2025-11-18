@@ -4,6 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Count
 from django.utils import timezone
+from django.conf import settings
+import sys
+from pathlib import Path
 from .models import (
     Tree,
     Post,
@@ -167,6 +170,49 @@ def dashboard_gestor(request):
         ).count(),
     }
     return render(request, "dashboards/gestor.html", context)
+
+
+@gestor_required
+def atualizar_arvores(request):
+    """Atualiza árvores do CSV usando o scraper"""
+    if request.method != "POST":
+        messages.error(request, "Método não permitido.")
+        return redirect("dashboard_gestor")
+    
+    try:
+        # Importa o módulo do scraper
+        scripts_path = Path(__file__).parent.parent.parent / "scripts"
+        sys.path.insert(0, str(scripts_path))
+        
+        from scrape_trees import run_scraper
+        
+        # Executa o scraper sem checagem de gaps (modo padrão)
+        # verbose=False para não poluir o output do Django
+        resultado = run_scraper(check_gaps=False, verbose=False)
+        
+        collected = resultado.get('collected', 0)
+        not_found = resultado.get('not_found', 0)
+        
+        if collected > 0:
+            messages.success(
+                request,
+                f"✅ Atualização concluída! {collected} nova(s) árvore(s) encontrada(s) e adicionada(s) ao banco de dados."
+            )
+        else:
+            messages.info(
+                request,
+                f"ℹ️ Nenhuma nova árvore encontrada. {not_found} ID(s) verificados sem sucesso."
+            )
+        
+    except Exception as e:
+        messages.error(
+            request,
+            f"❌ Erro ao atualizar árvores: {str(e)}"
+        )
+        import traceback
+        traceback.print_exc()
+    
+    return redirect("dashboard_gestor")
 
 
 @tecnico_required

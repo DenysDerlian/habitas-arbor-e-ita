@@ -38,7 +38,7 @@
     </div>
   </div>
   
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-6 mb-6">
     <h2 class="text-xl font-bold mb-4 text-gray-800">Ações Rápidas</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <a href="{% url 'listar_tecnicos_pendentes' %}" class="block bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 text-center font-medium">
@@ -51,6 +51,23 @@
         🔔 Gerenciar Notificações
       </a>
     </div>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">Atualização de Dados</h2>
+    <p class="text-gray-600 mb-4">
+      Atualize o banco de dados coletando novas árvores do sistema de São José dos Campos.
+      O processo começará do último ID coletado e continuará até não encontrar mais árvores.
+    </p>
+    <form method="post" action="{% url 'atualizar_arvores' %}" onsubmit="return confirm('Deseja iniciar a atualização de árvores? Este processo pode demorar alguns minutos.');">
+      {% csrf_token %}
+      <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-medium inline-flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        🔄 Atualizar Árvores
+      </button>
+    </form>
   </div>
 </div>
 {% endblock %}
