@@ -1,0 +1,171 @@
+{% extends '_base.html' %}
+{% load static %}
+
+{% block title %}{% if acao == 'criar' %}Criar{% else %}Editar{% endif %} Variável Customizada{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+  <h1 class="text-3xl font-bold mb-8 text-gray-800">
+    {% if acao == 'criar' %}Criar Nova Variável Customizada{% else %}Editar Variável Customizada{% endif %}
+  </h1>
+
+  <form method="post" class="bg-white rounded-lg shadow p-6 space-y-6">
+    {% csrf_token %}
+    
+    <!-- Informações Básicas -->
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Informações Básicas</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Variável *</label>
+          <input type="text" name="nome" value="{% if variavel %}{{ variavel.nome }}{% endif %}" required
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                 oninput="updateCodigo(this.value)">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Código Único *</label>
+          <input type="text" name="codigo" id="codigo" value="{% if variavel %}{{ variavel.codigo }}{% endif %}" required
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                 pattern="[a-z0-9_-]+" title="Apenas letras minúsculas, números, hífens e underscores">
+          <p class="text-xs text-gray-500 mt-1">Gerado automaticamente do nome (pode editar)</p>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Dado *</label>
+          <select name="tipo_dado" id="tipo_dado" required
+                  class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  onchange="atualizarTipoValor()">
+            <option value="FLOAT" {% if variavel and variavel.tipo_dado == 'FLOAT' %}selected{% endif %}>Número Decimal</option>
+            <option value="INTEGER" {% if variavel and variavel.tipo_dado == 'INTEGER' %}selected{% endif %}>Número Inteiro</option>
+            <option value="STRING" {% if variavel and variavel.tipo_dado == 'STRING' %}selected{% endif %}>Texto</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Unidade de Medida</label>
+          <input type="text" name="unidade_medida" value="{% if variavel %}{{ variavel.unidade_medida }}{% endif %}" 
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                 placeholder="Ex: cm, m, kg">
+        </div>
+      </div>
+      
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+        <textarea name="descricao" rows="3" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">{% if variavel %}{{ variavel.descricao }}{% endif %}</textarea>
+      </div>
+    </div>
+
+    <!-- Valor Padrão Geral -->
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Valor Padrão Geral</h2>
+      <p class="text-sm text-gray-600 mb-2">Este valor será usado para todas as árvores que não tiverem um valor específico ou valor por espécie definido.</p>
+      <div>
+        <input type="text" name="valor_padrao_geral" id="valor_padrao_geral" 
+               value="{% if variavel and variavel.valor_padrao_geral %}{{ variavel.valor_padrao_geral }}{% endif %}" 
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               placeholder="Digite o valor padrão">
+        <p class="text-xs text-gray-500 mt-1" id="tipo-valor-hint">Digite um número decimal</p>
+      </div>
+    </div>
+
+    <!-- Valores por Espécie -->
+    {% if acao == 'editar' %}
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Valores Padrão por Espécie</h2>
+      
+      {% if valores_por_especie %}
+      <div class="mb-4">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Espécie</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Valor Padrão</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for valor_especie in valores_por_especie %}
+            <tr>
+              <td class="px-4 py-2 text-sm text-gray-900">{{ valor_especie.species.name }}</td>
+              <td class="px-4 py-2 text-sm text-gray-500">{{ valor_especie.valor_padrao }}</td>
+              <td class="px-4 py-2 text-sm">
+                <a href="{% url 'remover_valor_especie' variavel.id valor_especie.species.id %}" 
+                   onclick="return confirm('Tem certeza que deseja remover este valor padrão?');"
+                   class="text-red-600 hover:text-red-900">Remover</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      
+      <a href="{% url 'definir_valor_especie' variavel.id %}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm inline-block">
+        + Adicionar Valor por Espécie
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Status -->
+    <div class="pb-4">
+      <label class="flex items-center">
+        <input type="checkbox" name="ativo" {% if not variavel or variavel.ativo %}checked{% endif %} 
+               class="mr-2 w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+        <span class="text-sm font-medium text-gray-700">Variável Ativa</span>
+      </label>
+    </div>
+
+    <!-- Botões -->
+    <div class="flex gap-4">
+      <button type="submit" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 font-medium">
+        {% if acao == 'criar' %}Criar Variável{% else %}Salvar Alterações{% endif %}
+      </button>
+      <a href="{% url 'configurar_servicos_variaveis' %}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-medium">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+function updateCodigo(nome) {
+  const codigo = nome.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+    .replace(/\s+/g, '_') // Substitui espaços por underscore
+    .replace(/_+/g, '_') // Remove underscores duplicados
+    .replace(/^_|_$/g, ''); // Remove underscores do início/fim
+  
+  document.getElementById('codigo').value = codigo;
+}
+
+function atualizarTipoValor() {
+  const tipo = document.getElementById('tipo_dado').value;
+  const input = document.getElementById('valor_padrao_geral');
+  const hint = document.getElementById('tipo-valor-hint');
+  
+  if (tipo === 'FLOAT') {
+    input.type = 'number';
+    input.step = 'any';
+    hint.textContent = 'Digite um número decimal (ex: 10.5)';
+  } else if (tipo === 'INTEGER') {
+    input.type = 'number';
+    input.step = '1';
+    hint.textContent = 'Digite um número inteiro (ex: 10)';
+  } else {
+    input.type = 'text';
+    hint.textContent = 'Digite um texto';
+  }
+}
+
+// Inicializa ao carregar
+document.addEventListener('DOMContentLoaded', function() {
+  atualizarTipoValor();
+});
+</script>
+{% endblock %}
+

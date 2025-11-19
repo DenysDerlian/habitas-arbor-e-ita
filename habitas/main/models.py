@@ -172,6 +172,54 @@ class Tree(models.Model):
     def get_all_ecosystem_services_json(self):
         """Retorna JSON string dos serviços ecossistêmicos (para uso no template)"""
         return json.dumps(self.get_all_ecosystem_services(), ensure_ascii=False)
+    
+    # ============ MÉTODOS PARA VARIÁVEIS CUSTOMIZADAS ============
+    
+    def get_variable_value(self, codigo_variavel):
+        """Obtém o valor de uma variável customizada para esta árvore
+        
+        Busca na seguinte ordem:
+        1. Valor específico da árvore (TreeVariableValue)
+        2. Valor padrão da espécie (SpeciesVariableDefault)
+        3. Valor padrão geral (TreeVariable.valor_padrao_geral)
+        
+        Retorna None se não encontrar valor em nenhum nível.
+        """
+        # Importação local para evitar import circular
+        from django.apps import apps
+        TreeVariable = apps.get_model('main', 'TreeVariable')
+        TreeVariableValue = apps.get_model('main', 'TreeVariableValue')
+        SpeciesVariableDefault = apps.get_model('main', 'SpeciesVariableDefault')
+        
+        try:
+            variable = TreeVariable.objects.get(codigo=codigo_variavel, ativo=True)
+            
+            # 1. Busca valor específico da árvore
+            try:
+                tree_value = TreeVariableValue.objects.get(tree=self, variable=variable)
+                return tree_value.valor
+            except TreeVariableValue.DoesNotExist:
+                pass
+            
+            # 2. Busca valor padrão da espécie
+            if self.species:
+                try:
+                    species_default = SpeciesVariableDefault.objects.get(
+                        species=self.species, 
+                        variable=variable
+                    )
+                    return species_default.valor_padrao
+                except SpeciesVariableDefault.DoesNotExist:
+                    pass
+            
+            # 3. Retorna valor padrão geral
+            if variable.valor_padrao_geral:
+                return variable.valor_padrao_geral
+            
+            return None
+            
+        except TreeVariable.DoesNotExist:
+            return None
 
 
 class Post(models.Model):
@@ -391,6 +439,27 @@ class EcosystemServiceConfig(models.Model):
             for key, value in coeficientes.items():
                 context[key] = value
             
+            # Adiciona variáveis customizadas ao contexto
+            # Importação local para evitar import circular
+            from django.apps import apps
+            TreeVariable = apps.get_model('main', 'TreeVariable')
+            
+            variaveis_customizadas = TreeVariable.objects.filter(ativo=True)
+            for var in variaveis_customizadas:
+                valor = tree.get_variable_value(var.codigo)
+                if valor is not None:
+                    # Converte para float se for numérico
+                    if var.tipo_dado in ['FLOAT', 'INTEGER']:
+                        try:
+                            context[var.codigo] = float(valor) if isinstance(valor, (int, float, str)) else 0.0
+                        except (ValueError, TypeError):
+                            context[var.codigo] = 0.0
+                    else:
+                        context[var.codigo] = valor
+                else:
+                    # Define como 0 para variáveis numéricas, None para strings
+                    context[var.codigo] = 0.0 if var.tipo_dado in ['FLOAT', 'INTEGER'] else None
+            
             # Avalia a fórmula com tratamento de erros matemáticos
             try:
                 resultado = eval(self.formula, {"__builtins__": {}}, context)
@@ -441,3 +510,68 @@ class EcosystemServiceHistory(models.Model):
     
     def __str__(self):
         return f"{self.servico.nome} - {self.acao} - {self.data.strftime('%d/%m/%Y %H:%M')}"
+
+
+class TreeVariable(models.Model):
+    """Variáveis customizadas que podem ser adicionadas às árvores"""
+    
+    class TipoDado(models.TextChoices):
+        FLOAT = 'FLOAT', 'Número Decimal'
+        INTEGER = 'INTEGER', 'Número Inteiro'
+        STRING = 'STRING', 'Texto'
+    
+    nome = models.CharField(max_length=255, unique=True, verbose_name="Nome da Variável")
+    codigo = models.SlugField(max_length=100, unique=True, verbose_name="Código Único")
+    tipo_dado = models.CharField(
+        max_length=10,
+        choices=TipoDado.choices,
+        default=TipoDado.FLOAT,
+        verbose_name="Tipo de Dado"
+    )
+    unidade_medida = models.CharField(max_length=50, blank=True, verbose_name="Unidade de Medida")
+    descricao = models.TextField(blank=True, verbose_name="Descrição")
+    valor_padrao_geral = models.JSONField(default=dict, blank=True, null=True, verbose_name="Valor Padrão Geral")
+    ativo = models.BooleanField(default=True, verbose_name="Variável Ativa")
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['nome']
+        verbose_name = 'Variável Customizada'
+        verbose_name_plural = 'Variáveis Customizadas'
+    
+    def __str__(self):
+        status = "✓" if self.ativo else "✗"
+        return f"{status} {self.nome}"
+
+
+class TreeVariableValue(models.Model):
+    """Valores específicos de variáveis customizadas para cada árvore"""
+    
+    tree = models.ForeignKey('Tree', on_delete=models.CASCADE, related_name='variaveis_customizadas')
+    variable = models.ForeignKey(TreeVariable, on_delete=models.CASCADE, related_name='valores')
+    valor = models.JSONField(verbose_name="Valor")
+    
+    class Meta:
+        unique_together = [['tree', 'variable']]
+        verbose_name = 'Valor de Variável'
+        verbose_name_plural = 'Valores de Variáveis'
+    
+    def __str__(self):
+        return f"{self.tree.nome_popular} - {self.variable.nome}: {self.valor}"
+
+
+class SpeciesVariableDefault(models.Model):
+    """Valores padrão de variáveis customizadas por espécie"""
+    
+    species = models.ForeignKey('Species', on_delete=models.CASCADE, related_name='variaveis_padrao')
+    variable = models.ForeignKey(TreeVariable, on_delete=models.CASCADE, related_name='valores_por_especie')
+    valor_padrao = models.JSONField(verbose_name="Valor Padrão")
+    
+    class Meta:
+        unique_together = [['species', 'variable']]
+        verbose_name = 'Valor Padrão por Espécie'
+        verbose_name_plural = 'Valores Padrão por Espécie'
+    
+    def __str__(self):
+        return f"{self.species.name} - {self.variable.nome}: {self.valor_padrao}"

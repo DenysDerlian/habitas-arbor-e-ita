@@ -17,6 +17,10 @@ from .models import (
     Notificacao,
     HistoricoNotificacao,
     EcosystemServiceConfig,
+    TreeVariable,
+    TreeVariableValue,
+    SpeciesVariableDefault,
+    Species,
 )
 from .forms import (
     CidadaoRegistrationForm,
@@ -630,3 +634,356 @@ def resolver_notificacao(request, notificacao_id):
 def politica_privacidade(request):
     """Exibe a política de privacidade"""
     return render(request, "privacy_policy.html")
+
+
+# ==================== GESTÃO DE SERVIÇOS ECOSSISTÊMICOS E VARIÁVEIS ====================
+
+@gestor_required
+def configurar_servicos_variaveis(request):
+    """Página principal de configuração de serviços e variáveis"""
+    servicos = EcosystemServiceConfig.objects.all().order_by('ordem_exibicao', 'nome')
+    variaveis = TreeVariable.objects.all().order_by('nome')
+    
+    context = {
+        'servicos': servicos,
+        'variaveis': variaveis,
+    }
+    return render(request, "gestao/configuracoes.html", context)
+
+
+@gestor_required
+def criar_servico_ecossistemico(request):
+    """Cria um novo serviço ecossistêmico"""
+    if request.method == "POST":
+        try:
+            nome = request.POST.get('nome')
+            codigo = request.POST.get('codigo')
+            descricao = request.POST.get('descricao', '')
+            categoria = request.POST.get('categoria', 'OUTROS')
+            formula = request.POST.get('formula', '')
+            coeficientes_json = request.POST.get('coeficientes', '{}')
+            valor_monetario = float(request.POST.get('valor_monetario_unitario', 0))
+            unidade_medida = request.POST.get('unidade_medida', 'unidade')
+            referencia_cientifica = request.POST.get('referencia_cientifica', '')
+            ativo = request.POST.get('ativo') == 'on'
+            ordem_exibicao = int(request.POST.get('ordem_exibicao', 0))
+            
+            coeficientes = json.loads(coeficientes_json) if coeficientes_json else {}
+            
+            servico = EcosystemServiceConfig.objects.create(
+                nome=nome,
+                codigo=codigo,
+                descricao=descricao,
+                categoria=categoria,
+                formula=formula,
+                coeficientes=coeficientes,
+                valor_monetario_unitario=valor_monetario,
+                unidade_medida=unidade_medida,
+                referencia_cientifica=referencia_cientifica,
+                ativo=ativo,
+                ordem_exibicao=ordem_exibicao,
+                criado_por=request.user
+            )
+            
+            messages.success(request, f"Serviço '{nome}' criado com sucesso!")
+            return redirect('configurar_servicos_variaveis')
+        except Exception as e:
+            messages.error(request, f"Erro ao criar serviço: {str(e)}")
+    
+    return render(request, "gestao/form_servico.html", {'acao': 'criar'})
+
+
+@gestor_required
+def editar_servico_ecossistemico(request, servico_id):
+    """Edita um serviço ecossistêmico existente"""
+    servico = get_object_or_404(EcosystemServiceConfig, id=servico_id)
+    
+    if request.method == "POST":
+        try:
+            servico.nome = request.POST.get('nome')
+            servico.codigo = request.POST.get('codigo')
+            servico.descricao = request.POST.get('descricao', '')
+            servico.categoria = request.POST.get('categoria', 'OUTROS')
+            servico.formula = request.POST.get('formula', '')
+            coeficientes_json = request.POST.get('coeficientes', '{}')
+            servico.valor_monetario_unitario = float(request.POST.get('valor_monetario_unitario', 0))
+            servico.unidade_medida = request.POST.get('unidade_medida', 'unidade')
+            servico.referencia_cientifica = request.POST.get('referencia_cientifica', '')
+            servico.ativo = request.POST.get('ativo') == 'on'
+            servico.ordem_exibicao = int(request.POST.get('ordem_exibicao', 0))
+            
+            # Processa coeficientes - pode vir como JSON ou como arrays separados
+            coeficientes = {}
+            if coeficientes_json and coeficientes_json != '{}':
+                try:
+                    coeficientes = json.loads(coeficientes_json)
+                except json.JSONDecodeError:
+                    # Se não for JSON válido, tenta processar arrays
+                    coef_nomes = request.POST.getlist('coef_nome[]')
+                    coef_valores = request.POST.getlist('coef_valor[]')
+                    for nome, valor in zip(coef_nomes, coef_valores):
+                        if nome and valor:
+                            try:
+                                coeficientes[nome] = float(valor)
+                            except ValueError:
+                                coeficientes[nome] = valor
+            
+            servico.coeficientes = coeficientes
+            servico.save()
+            
+            messages.success(request, f"Serviço '{servico.nome}' atualizado com sucesso!")
+            return redirect('configurar_servicos_variaveis')
+        except Exception as e:
+            messages.error(request, f"Erro ao atualizar serviço: {str(e)}")
+    
+    return render(request, "gestao/form_servico.html", {'acao': 'editar', 'servico': servico})
+
+
+@gestor_required
+def excluir_servico_ecossistemico(request, servico_id):
+    """Exclui um serviço ecossistêmico"""
+    servico = get_object_or_404(EcosystemServiceConfig, id=servico_id)
+    
+    if request.method == "POST":
+        nome = servico.nome
+        servico.delete()
+        messages.success(request, f"Serviço '{nome}' excluído com sucesso!")
+        return redirect('configurar_servicos_variaveis')
+    
+    return render(request, "gestao/confirmar_exclusao.html", {
+        'objeto': servico,
+        'tipo': 'serviço',
+        'url_voltar': 'configurar_servicos_variaveis'
+    })
+
+
+@gestor_required
+def criar_variavel_customizada(request):
+    """Cria uma nova variável customizada"""
+    if request.method == "POST":
+        try:
+            nome = request.POST.get('nome')
+            codigo = request.POST.get('codigo')
+            tipo_dado = request.POST.get('tipo_dado', 'FLOAT')
+            unidade_medida = request.POST.get('unidade_medida', '')
+            descricao = request.POST.get('descricao', '')
+            valor_padrao_geral_str = request.POST.get('valor_padrao_geral', '')
+            ativo = request.POST.get('ativo') == 'on'
+            
+            # Converte valor padrão conforme tipo
+            valor_padrao_geral = None
+            if valor_padrao_geral_str:
+                if tipo_dado == 'FLOAT':
+                    valor_padrao_geral = float(valor_padrao_geral_str)
+                elif tipo_dado == 'INTEGER':
+                    valor_padrao_geral = int(float(valor_padrao_geral_str))
+                else:
+                    valor_padrao_geral = valor_padrao_geral_str
+            
+            variavel = TreeVariable.objects.create(
+                nome=nome,
+                codigo=codigo,
+                tipo_dado=tipo_dado,
+                unidade_medida=unidade_medida,
+                descricao=descricao,
+                valor_padrao_geral=valor_padrao_geral,
+                ativo=ativo
+            )
+            
+            messages.success(request, f"Variável '{nome}' criada com sucesso!")
+            return redirect('configurar_servicos_variaveis')
+        except Exception as e:
+            messages.error(request, f"Erro ao criar variável: {str(e)}")
+    
+    especies = Species.objects.all().order_by('name')
+    return render(request, "gestao/form_variavel.html", {'acao': 'criar', 'especies': especies})
+
+
+@gestor_required
+def editar_variavel_customizada(request, variavel_id):
+    """Edita uma variável customizada existente"""
+    variavel = get_object_or_404(TreeVariable, id=variavel_id)
+    especies = Species.objects.all().order_by('name')
+    valores_por_especie = SpeciesVariableDefault.objects.filter(variable=variavel)
+    
+    if request.method == "POST":
+        try:
+            variavel.nome = request.POST.get('nome')
+            variavel.codigo = request.POST.get('codigo')
+            variavel.tipo_dado = request.POST.get('tipo_dado', 'FLOAT')
+            variavel.unidade_medida = request.POST.get('unidade_medida', '')
+            variavel.descricao = request.POST.get('descricao', '')
+            valor_padrao_geral_str = request.POST.get('valor_padrao_geral', '')
+            variavel.ativo = request.POST.get('ativo') == 'on'
+            
+            # Converte valor padrão conforme tipo
+            if valor_padrao_geral_str:
+                if variavel.tipo_dado == 'FLOAT':
+                    variavel.valor_padrao_geral = float(valor_padrao_geral_str)
+                elif variavel.tipo_dado == 'INTEGER':
+                    variavel.valor_padrao_geral = int(float(valor_padrao_geral_str))
+                else:
+                    variavel.valor_padrao_geral = valor_padrao_geral_str
+            else:
+                variavel.valor_padrao_geral = None
+            
+            variavel.save()
+            
+            messages.success(request, f"Variável '{variavel.nome}' atualizada com sucesso!")
+            return redirect('configurar_servicos_variaveis')
+        except Exception as e:
+            messages.error(request, f"Erro ao atualizar variável: {str(e)}")
+    
+    return render(request, "gestao/form_variavel.html", {
+        'acao': 'editar',
+        'variavel': variavel,
+        'especies': especies,
+        'valores_por_especie': valores_por_especie
+    })
+
+
+@gestor_required
+def excluir_variavel_customizada(request, variavel_id):
+    """Exclui uma variável customizada"""
+    variavel = get_object_or_404(TreeVariable, id=variavel_id)
+    
+    if request.method == "POST":
+        nome = variavel.nome
+        variavel.delete()
+        messages.success(request, f"Variável '{nome}' excluída com sucesso!")
+        return redirect('configurar_servicos_variaveis')
+    
+    return render(request, "gestao/confirmar_exclusao.html", {
+        'objeto': variavel,
+        'tipo': 'variável',
+        'url_voltar': 'configurar_servicos_variaveis'
+    })
+
+
+@gestor_required
+def definir_valor_especie(request, variavel_id):
+    """Define valor padrão de uma variável para uma espécie"""
+    variavel = get_object_or_404(TreeVariable, id=variavel_id)
+    
+    if request.method == "POST":
+        try:
+            species_id = request.POST.get('species_id')
+            valor_str = request.POST.get('valor_padrao', '')
+            
+            species = get_object_or_404(Species, id=species_id)
+            
+            # Converte valor conforme tipo
+            valor = None
+            if valor_str:
+                if variavel.tipo_dado == 'FLOAT':
+                    valor = float(valor_str)
+                elif variavel.tipo_dado == 'INTEGER':
+                    valor = int(float(valor_str))
+                else:
+                    valor = valor_str
+            
+            # Cria ou atualiza valor padrão
+            especie_default, created = SpeciesVariableDefault.objects.update_or_create(
+                species=species,
+                variable=variavel,
+                defaults={'valor_padrao': valor}
+            )
+            
+            acao = "criado" if created else "atualizado"
+            messages.success(request, f"Valor padrão {acao} com sucesso!")
+            return redirect('editar_variavel_customizada', variavel_id=variavel_id)
+        except Exception as e:
+            messages.error(request, f"Erro ao definir valor: {str(e)}")
+    
+    especies = Species.objects.all().order_by('name')
+    return render(request, "gestao/form_valor_especie.html", {
+        'variavel': variavel,
+        'especies': especies
+    })
+
+
+@gestor_required
+def remover_valor_especie(request, variavel_id, especie_id):
+    """Remove valor padrão de uma variável para uma espécie"""
+    variavel = get_object_or_404(TreeVariable, id=variavel_id)
+    species = get_object_or_404(Species, id=especie_id)
+    
+    if request.method == "POST":
+        try:
+            SpeciesVariableDefault.objects.filter(variable=variavel, species=species).delete()
+            messages.success(request, "Valor padrão removido com sucesso!")
+        except Exception as e:
+            messages.error(request, f"Erro ao remover valor: {str(e)}")
+    
+    return redirect('editar_variavel_customizada', variavel_id=variavel_id)
+
+
+@gestor_required
+def validar_formula(request):
+    """Valida uma fórmula via AJAX"""
+    if request.method == "POST":
+        try:
+            formula = request.POST.get('formula', '')
+            coeficientes_json = request.POST.get('coeficientes', '{}')
+            
+            import math
+            
+            # Dados de exemplo para teste
+            dap = 30.0
+            altura = 10.0
+            biomassa = math.exp(-0.906586 + 1.60421 * math.log(dap) + 0.37162 * math.log(altura)) / 1000
+            
+            coeficientes = json.loads(coeficientes_json) if coeficientes_json else {}
+            
+            context = {
+                'math': math,
+                'dap': dap,
+                'altura': altura,
+                'biomassa': biomassa,
+                'coeficientes': coeficientes,
+            }
+            
+            # Expande coeficientes
+            for key, value in coeficientes.items():
+                context[key] = value
+            
+            # Adiciona variáveis customizadas (com valores de exemplo)
+            variaveis = TreeVariable.objects.filter(ativo=True)
+            for var in variaveis:
+                if var.tipo_dado in ['FLOAT', 'INTEGER']:
+                    context[var.codigo] = 1.0  # Valor de exemplo
+                else:
+                    context[var.codigo] = None
+            
+            # Tenta avaliar a fórmula
+            resultado = eval(formula, {"__builtins__": {}}, context)
+            
+            if not isinstance(resultado, (int, float)) or math.isnan(resultado) or math.isinf(resultado):
+                return JsonResponse({
+                    'valido': False,
+                    'erro': 'A fórmula retornou um valor inválido'
+                })
+            
+            return JsonResponse({
+                'valido': True,
+                'resultado_exemplo': round(float(resultado), 4),
+                'mensagem': f'Fórmula válida! Resultado de exemplo: {round(float(resultado), 4)}'
+            })
+            
+        except SyntaxError as e:
+            return JsonResponse({
+                'valido': False,
+                'erro': f'Erro de sintaxe: {str(e)}'
+            })
+        except (ValueError, ZeroDivisionError, OverflowError) as e:
+            return JsonResponse({
+                'valido': False,
+                'erro': f'Erro matemático: {str(e)}'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'valido': False,
+                'erro': f'Erro: {str(e)}'
+            })
+    
+    return JsonResponse({'valido': False, 'erro': 'Método não permitido'})

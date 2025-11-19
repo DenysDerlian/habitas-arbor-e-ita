@@ -40,7 +40,7 @@
   
   <div class="bg-white rounded-lg shadow p-6 mb-6">
     <h2 class="text-xl font-bold mb-4 text-gray-800">Ações Rápidas</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <a href="{% url 'listar_tecnicos_pendentes' %}" class="block bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 text-center font-medium">
         👥 Aprovar Técnicos
       </a>
@@ -49,6 +49,9 @@
       </a>
       <a href="{% url 'listar_notificacoes' %}" class="block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 text-center font-medium">
         🔔 Gerenciar Notificações
+      </a>
+      <a href="{% url 'configurar_servicos_variaveis' %}" class="block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 text-center font-medium">
+        ⚙️ Configurar Serviços e Variáveis
       </a>
     </div>
   </div>

@@ -1,0 +1,316 @@
+{% extends '_base.html' %}
+{% load static %}
+
+{% block title %}{% if acao == 'criar' %}Criar{% else %}Editar{% endif %} Serviço Ecossistêmico{% endblock %}
+
+{% block header %}
+<script src="{% static 'js/editor_formulas.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+  <h1 class="text-3xl font-bold mb-8 text-gray-800">
+    {% if acao == 'criar' %}Criar Novo Serviço Ecossistêmico{% else %}Editar Serviço Ecossistêmico{% endif %}
+  </h1>
+
+  <form method="post" class="bg-white rounded-lg shadow p-6 space-y-6">
+    {% csrf_token %}
+    
+    <!-- Informações Básicas -->
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Informações Básicas</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Serviço *</label>
+          <input type="text" name="nome" value="{% if servico %}{{ servico.nome }}{% endif %}" required
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                 oninput="updateCodigo(this.value)">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Código Único *</label>
+          <input type="text" name="codigo" id="codigo" value="{% if servico %}{{ servico.codigo }}{% endif %}" required
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                 pattern="[a-z0-9_-]+" title="Apenas letras minúsculas, números, hífens e underscores">
+          <p class="text-xs text-gray-500 mt-1">Gerado automaticamente do nome (pode editar)</p>
+        </div>
+      </div>
+      
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+        <textarea name="descricao" rows="3" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">{% if servico %}{{ servico.descricao }}{% endif %}</textarea>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+          <select name="categoria" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="SEQUESTRO" {% if servico and servico.categoria == 'SEQUESTRO' %}selected{% endif %}>Sequestro/Armazenamento</option>
+            <option value="INTERCEPTACAO" {% if servico and servico.categoria == 'INTERCEPTACAO' %}selected{% endif %}>Interceptação</option>
+            <option value="ENERGIA" {% if servico and servico.categoria == 'ENERGIA' %}selected{% endif %}>Energia</option>
+            <option value="POLUICAO" {% if servico and servico.categoria == 'POLUICAO' %}selected{% endif %}>Poluição</option>
+            <option value="OUTROS" {% if not servico or servico.categoria == 'OUTROS' %}selected{% endif %}>Outros</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ordem de Exibição</label>
+          <input type="number" name="ordem_exibicao" value="{% if servico %}{{ servico.ordem_exibicao }}{% else %}0{% endif %}" 
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Fórmula -->
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Fórmula de Cálculo</h2>
+      
+      <!-- Barra de Ferramentas do Editor -->
+      <div class="mb-2 p-2 bg-gray-50 rounded border">
+        <div class="flex flex-wrap gap-2 mb-2">
+          <span class="text-xs font-semibold text-gray-600">Variáveis:</span>
+          <button type="button" onclick="insertVariable('dap')" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">dap</button>
+          <button type="button" onclick="insertVariable('altura')" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">altura</button>
+          <button type="button" onclick="insertVariable('biomassa')" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">biomassa</button>
+          <span id="variaveis-customizadas"></span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs font-semibold text-gray-600">Operadores:</span>
+          <button type="button" onclick="insertText(' + ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">+</button>
+          <button type="button" onclick="insertText(' - ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">-</button>
+          <button type="button" onclick="insertText(' * ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">*</button>
+          <button type="button" onclick="insertText(' / ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">/</button>
+          <button type="button" onclick="insertText(' ** ')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">**</button>
+          <button type="button" onclick="insertText('math.log(')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">log()</button>
+          <button type="button" onclick="insertText('math.exp(')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">exp()</button>
+          <button type="button" onclick="insertText('math.sqrt(')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">sqrt()</button>
+          <button type="button" onclick="insertText('math.pi')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300">π</button>
+        </div>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fórmula Python *</label>
+        <textarea name="formula" id="formula-input" rows="6" required
+                  class="w-full border rounded px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Exemplo: math.exp(coeficientes['BETA0'] + coeficientes['BETA1'] * math.log(dap) + coeficientes['BETA2'] * math.log(altura)) / 1000">{% if servico %}{{ servico.formula }}{% endif %}</textarea>
+        <p class="text-xs text-gray-500 mt-1">Use variáveis: dap, altura, biomassa, tree, math, coeficientes</p>
+      </div>
+      
+      <div class="mt-2">
+        <button type="button" onclick="validarFormula()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
+          Validar Fórmula
+        </button>
+        <span id="validacao-resultado" class="ml-3 text-sm"></span>
+      </div>
+    </div>
+
+    <!-- Coeficientes -->
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Coeficientes</h2>
+      <div id="coeficientes-container">
+        {% if servico and servico.coeficientes %}
+          {% for key, value in servico.coeficientes.items %}
+          <div class="flex gap-2 mb-2 coeficiente-item">
+            <input type="text" name="coef_nome[]" value="{{ key }}" placeholder="Nome" 
+                   class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <input type="number" step="any" name="coef_valor[]" value="{{ value }}" placeholder="Valor" 
+                   class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="button" onclick="removerCoeficiente(this)" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600">Remover</button>
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+      <button type="button" onclick="adicionarCoeficiente()" class="mt-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 text-sm">
+        + Adicionar Coeficiente
+      </button>
+      <input type="hidden" name="coeficientes" id="coeficientes-json" value="">
+    </div>
+
+    <!-- Valoração -->
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Valoração Monetária</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Valor Monetário por Unidade (R$)</label>
+          <input type="number" step="0.01" name="valor_monetario_unitario" 
+                 value="{% if servico %}{{ servico.valor_monetario_unitario }}{% else %}0{% endif %}" 
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Unidade de Medida</label>
+          <input type="text" name="unidade_medida" value="{% if servico %}{{ servico.unidade_medida }}{% else %}unidade{% endif %}" 
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                 placeholder="Ex: ton, kg, L, kWh">
+        </div>
+      </div>
+    </div>
+
+    <!-- Referência Científica -->
+    <div class="border-b pb-4">
+      <h2 class="text-xl font-semibold mb-4 text-gray-700">Referência Científica</h2>
+      <input type="text" name="referencia_cientifica" value="{% if servico %}{{ servico.referencia_cientifica }}{% endif %}" 
+             class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+             placeholder="Ex: Autor et al. (2020)">
+    </div>
+
+    <!-- Status -->
+    <div class="pb-4">
+      <label class="flex items-center">
+        <input type="checkbox" name="ativo" {% if not servico or servico.ativo %}checked{% endif %} 
+               class="mr-2 w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+        <span class="text-sm font-medium text-gray-700">Serviço Ativo</span>
+      </label>
+    </div>
+
+    <!-- Botões -->
+    <div class="flex gap-4">
+      <button type="submit" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 font-medium">
+        {% if acao == 'criar' %}Criar Serviço{% else %}Salvar Alterações{% endif %}
+      </button>
+      <a href="{% url 'configurar_servicos_variaveis' %}" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-medium">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+// Carrega variáveis customizadas ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+  carregarVariaveisCustomizadas();
+  // Inicializa coeficientes JSON com valores existentes
+  {% if servico and servico.coeficientes %}
+  const coeficientesIniciais = {{ servico.coeficientes|safe }};
+  document.getElementById('coeficientes-json').value = JSON.stringify(coeficientesIniciais);
+  {% else %}
+  document.getElementById('coeficientes-json').value = '{}';
+  {% endif %}
+  atualizarCoeficientesJSON();
+});
+
+function updateCodigo(nome) {
+  const codigo = nome.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+    .replace(/\s+/g, '_') // Substitui espaços por underscore
+    .replace(/_+/g, '_') // Remove underscores duplicados
+    .replace(/^_|_$/g, ''); // Remove underscores do início/fim
+  
+  document.getElementById('codigo').value = codigo;
+}
+
+function insertVariable(varName) {
+  const textarea = document.getElementById('formula-input');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  const before = text.substring(0, start);
+  const after = text.substring(end, text.length);
+  
+  textarea.value = before + varName + after;
+  textarea.focus();
+  textarea.setSelectionRange(start + varName.length, start + varName.length);
+}
+
+function insertText(text) {
+  const textarea = document.getElementById('formula-input');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const textValue = textarea.value;
+  const before = textValue.substring(0, start);
+  const after = textValue.substring(end, textValue.length);
+  
+  textarea.value = before + text + after;
+  textarea.focus();
+  textarea.setSelectionRange(start + text.length, start + text.length);
+}
+
+function adicionarCoeficiente() {
+  const container = document.getElementById('coeficientes-container');
+  const div = document.createElement('div');
+  div.className = 'flex gap-2 mb-2 coeficiente-item';
+  div.innerHTML = `
+    <input type="text" name="coef_nome[]" placeholder="Nome" 
+           class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+    <input type="number" step="any" name="coef_valor[]" placeholder="Valor" 
+           class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+    <button type="button" onclick="removerCoeficiente(this)" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600">Remover</button>
+  `;
+  container.appendChild(div);
+  atualizarCoeficientesJSON();
+}
+
+function removerCoeficiente(btn) {
+  btn.closest('.coeficiente-item').remove();
+  atualizarCoeficientesJSON();
+}
+
+function atualizarCoeficientesJSON() {
+  const coeficientes = {};
+  document.querySelectorAll('.coeficiente-item').forEach(item => {
+    const nomeInput = item.querySelector('input[name="coef_nome[]"]');
+    const valorInput = item.querySelector('input[name="coef_valor[]"]');
+    if (nomeInput && valorInput) {
+      const nome = nomeInput.value.trim();
+      const valor = valorInput.value;
+      if (nome && valor) {
+        const numValor = parseFloat(valor);
+        coeficientes[nome] = isNaN(numValor) ? valor : numValor;
+      }
+    }
+  });
+  const jsonInput = document.getElementById('coeficientes-json');
+  if (jsonInput) {
+    jsonInput.value = JSON.stringify(coeficientes);
+  }
+}
+
+function validarFormula() {
+  const formula = document.getElementById('formula-input').value;
+  const coeficientes = document.getElementById('coeficientes-json').value;
+  const resultado = document.getElementById('validacao-resultado');
+  
+  resultado.innerHTML = '<span class="text-blue-500">Validando...</span>';
+  
+  fetch('{% url "validar_formula" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: `formula=${encodeURIComponent(formula)}&coeficientes=${encodeURIComponent(coeficientes)}`
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.valido) {
+      resultado.innerHTML = `<span class="text-green-600">✓ ${data.mensagem}</span>`;
+    } else {
+      resultado.innerHTML = `<span class="text-red-600">✗ Erro: ${data.erro}</span>`;
+    }
+  })
+  .catch(error => {
+    resultado.innerHTML = `<span class="text-red-600">✗ Erro ao validar: ${error}</span>`;
+  });
+}
+
+function carregarVariaveisCustomizadas() {
+  // Esta função será implementada no editor_formulas.js para carregar variáveis customizadas via AJAX
+  fetch('{% url "configurar_servicos_variaveis" %}')
+    .then(response => response.text())
+    .then(html => {
+      // Parse HTML para extrair variáveis (implementação simplificada)
+      const container = document.getElementById('variaveis-customizadas');
+      // Será implementado quando tivermos API para buscar variáveis
+    });
+}
+
+// Atualiza coeficientes antes de submeter
+document.querySelector('form').addEventListener('submit', function(e) {
+  atualizarCoeficientesJSON();
+});
+</script>
+{% endblock %}
+
