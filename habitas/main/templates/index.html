@@ -89,6 +89,14 @@ crossorigin=""></script>
       <h1 class="text-3xl text-left font-bold my-2 w-fit">Árvores de SJC<hr class="bg-emerald-600 h-2.5 w-full my-2" /></h1>
       <p class="text-left text-xl font-medium my-2">Aprenda sobre as árvores de sua vizinhança.</p>
       <p class="text-left font-light">Pela primeira vez, você tem acesso a informações sobre as árvores de São José dos Campos. Aprenda sobre as árvores que compõem a floresta urbana da nossa cidade.</p>
+      <div class="mb-4">
+        <button id="btn-reset-all" onclick="resetAllSelections()" class="hidden bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 font-medium transition-colors">
+          <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Ver Todas as Árvores
+        </button>
+      </div>
       <h1 class="text-2xl text-left font-medium my-4 w-fit">Estatísticas gerais<hr class="bg-emerald-900 h-1.5 w-full" /></h1>
       <div class="grid grid-cols-3" id="estatisticas-gerais"></div>
       <h1 class="text-2xl text-left font-medium my-4 w-fit">Benefícios ecológicos<hr class="bg-emerald-900 h-1.5 w-full" /></h1>
@@ -165,6 +173,32 @@ crossorigin=""></script>
     {% endfor %}
   };
 
+  function renderStatisticsFromTree(tree) {
+    // Renderiza estatísticas de uma única árvore
+    const species = tree.nome_cientifico ? 1 : 0;
+    const total_n_posts = tree.n_comentarios || 0;
+    
+    // Calcula serviços da árvore
+    const servicesData = {};
+    if (tree.services) {
+      for (const [codigo, servico] of Object.entries(tree.services)) {
+        const config = ecosystemServicesConfig[codigo];
+        if (config) {
+          const valorFisico = servico.valor_fisico || 0;
+          const valorMonetario = servico.valor_monetario || (valorFisico * config.valorMonetario);
+          
+          servicesData[codigo] = {
+            valorFisico: valorFisico,
+            valorMonetario: valorMonetario,
+            config: config
+          };
+        }
+      }
+    }
+    
+    renderStatisticsHTML(1, species, total_n_posts, servicesData);
+  }
+
   function renderStatistics(circles) {
     // Filtra apenas círculos com dados de espécie carregados para estatísticas precisas
     const circlesWithSpecies = circles.filter(c => c.tree_species);
@@ -189,12 +223,17 @@ crossorigin=""></script>
         config: config
       };
     }
+    
+    renderStatisticsHTML(circles.length, species, total_n_posts, servicesData);
+  }
+
+  function renderStatisticsHTML(totalTrees, species, total_n_posts, servicesData) {
 
     document.getElementById("estatisticas-gerais").innerHTML = `
       <div class="my-2">
-        <span class="font-bold text-xl">${circles.length}</span>
+        <span class="font-bold text-xl">${totalTrees}</span>
         <br>
-        <span class="text-lg">Árvores Cadastradas</span>
+        <span class="text-lg">Árvores</span>
       </div>
       <div class="my-2">
         <span class="font-bold text-xl">${species}</span>
@@ -328,7 +367,21 @@ crossorigin=""></script>
       });
       
       clickedLayerId = null;
-      renderStatistics(originalCircles);
+      selectedNeighborhoodId = null;
+      
+      // Se há árvore selecionada, mostra só ela, senão mostra todas
+      if (selectedTreeId) {
+        const selectedCircle = originalCircles.find(c => c.tree_id === selectedTreeId);
+        if (selectedCircle) {
+          renderStatisticsFromTree(tree_map.get(selectedTreeId));
+        } else {
+          renderStatistics(originalCircles);
+        }
+      } else {
+        renderStatistics(originalCircles);
+      }
+      
+      updateResetButton();
     } else {
       // Selecionar bairro: mostra apenas árvores daquele bairro
       clickedLayer.bindTooltip(clickedLayer.feature.properties.bairro,  {permanent: true, direction: 'center', opacity: 0.5}).addTo(map);
@@ -347,10 +400,37 @@ crossorigin=""></script>
       filteredCircles.forEach(circle => {
           circleLayerGroup.addLayer(circle)
       });
-  
+
       clickedLayerId = clickedLayer.feature.id;
-  
-      renderStatistics(filteredCircles);
+      selectedNeighborhoodId = clickedLayer.feature.id;
+      
+      // Esconde detalhes da árvore selecionada quando seleciona bairro
+      if (selectedTreeId) {
+        document.getElementById("estatisticas").style.display = "none";
+        // Remove seleção visual da árvore
+        if (lastClickedCircle) {
+          lastClickedCircle.setStyle({
+            color: tree_map.get(lastClickedCircle.tree_id).color,
+            fillColor: tree_map.get(lastClickedCircle.tree_id).color
+          });
+          lastClickedCircle = null;
+        }
+        selectedTreeId = null;
+      }
+
+      // Carrega dados das árvores do bairro antes de renderizar estatísticas
+      async function loadNeighborhoodData() {
+        const loadPromises = filteredCircles.map(async (circle) => {
+          if (!circle.services) {
+            await loadTreeData(circle.tree_id);
+          }
+        });
+        await Promise.all(loadPromises);
+        renderStatistics(filteredCircles);
+      }
+      
+      loadNeighborhoodData();
+      updateResetButton();
     }
     
     circleLayerGroup.addTo(map);
@@ -406,11 +486,85 @@ crossorigin=""></script>
     }
   }
 
+  function updateResetButton() {
+    const btnReset = document.getElementById("btn-reset-all");
+    if (selectedTreeId || selectedNeighborhoodId) {
+      btnReset.classList.remove("hidden");
+    } else {
+      btnReset.classList.add("hidden");
+    }
+  }
+
+  function resetAllSelections() {
+    // Remove seleção de bairro
+    if (selectedNeighborhoodId) {
+      neighborhoodsLayer.getLayers().forEach((layer) => {
+        if (layer.feature.id === selectedNeighborhoodId) {
+          layer.setStyle({weight: 0, color: 'transparent', dashArray: '', fillOpacity: 0.0});
+          layer.unbindTooltip();
+        }
+      });
+      clickedLayerId = null;
+      selectedNeighborhoodId = null;
+    }
+    
+    // Remove seleção de árvore
+    if (lastClickedCircle) {
+      lastClickedCircle.setStyle({
+        color: tree_map.get(lastClickedCircle.tree_id).color,
+        fillColor: tree_map.get(lastClickedCircle.tree_id).color
+      });
+      lastClickedCircle = null;
+    }
+    
+    selectedTreeId = null;
+    document.getElementById("estatisticas").style.display = "none";
+    
+    // Mostra todas as árvores
+    circleLayerGroup.clearLayers();
+    originalCircles.forEach(circle => {
+      circleLayerGroup.addLayer(circle)
+    });
+    circleLayerGroup.addTo(map);
+    
+    // Atualiza estatísticas para todas as árvores
+    // Como os círculos podem não ter serviços carregados inicialmente,
+    // renderStatistics vai calcular com os dados disponíveis (que serão 0 para serviços não carregados)
+    // Isso está correto porque inicialmente só carregamos posições
+    renderStatistics(originalCircles);
+    updateResetButton();
+  }
+
   async function onMapClick(index) {
     // Carrega dados completos se necessário
     const tree = await loadTreeData(index);
     
+    selectedTreeId = index;
+    
+    // Se há bairro selecionado, remove a seleção do bairro
+    if (selectedNeighborhoodId) {
+      neighborhoodsLayer.getLayers().forEach((layer) => {
+        if (layer.feature.id === selectedNeighborhoodId) {
+          layer.setStyle({weight: 0, color: 'transparent', dashArray: '', fillOpacity: 0.0});
+          layer.unbindTooltip();
+        }
+      });
+      clickedLayerId = null;
+      selectedNeighborhoodId = null;
+      
+      // Mostra todas as árvores novamente
+      circleLayerGroup.clearLayers();
+      originalCircles.forEach(circle => {
+        circleLayerGroup.addLayer(circle)
+      });
+      circleLayerGroup.addTo(map);
+    }
+    
+    // Atualiza estatísticas de cima com dados da árvore selecionada
+    renderStatisticsFromTree(tree);
+    
     Unicorn.call("posts", "update", tree.id);
+    updateResetButton();
     let img_links = [];
     for (let i = 0; i < (tree.imagens || []).length; i++) {
       img_links.push(`<img src="https://arvores.sjc.sp.gov.br${tree.imagens[i]}">`);
@@ -451,56 +605,13 @@ crossorigin=""></script>
 
     document.getElementById("estatisticas").style.display = "block";
     
-    // Gera HTML dinamicamente com todos os serviços ecossistêmicos
-    let servicosHTML = '';
-    if (tree.services) {
-      for (const [codigo, servico] of Object.entries(tree.services)) {
-        const nome = servico.nome || 'Serviço';
-        const valorFisico = servico.valor_fisico || 0;
-        const valorMonetario = servico.valor_monetario || 0;
-        const unidade = servico.unidade || 'unidade';
-        
-        // Formatação baseada na unidade
-        let valorFormatado = '';
-        if (unidade.includes('ton')) {
-          valorFormatado = valorFisico.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        } else if (unidade.includes('kg')) {
-          valorFormatado = Math.round(valorFisico * 1000).toLocaleString(undefined, {maximumFractionDigits: 0});
-        } else if (unidade.includes('L')) {
-          valorFormatado = Math.round(valorFisico).toLocaleString(undefined, {maximumFractionDigits: 0});
-        } else if (unidade.includes('kWh')) {
-          valorFormatado = Math.round(valorFisico).toLocaleString(undefined, {maximumFractionDigits: 0});
-        } else if (unidade.includes('g')) {
-          valorFormatado = valorFisico.toLocaleString(undefined, {maximumFractionDigits: 2});
-        } else {
-          valorFormatado = Math.round(valorFisico).toLocaleString(undefined, {maximumFractionDigits: 0});
-        }
-        
-        servicosHTML += `<p>${nome}: ${valorFormatado} ${unidade}`;
-        if (valorMonetario > 0) {
-          servicosHTML += ` (Valor: R$ ${valorMonetario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
-        }
-        servicosHTML += `</p>`;
-      }
-    } else {
-      // Fallback para compatibilidade com código antigo
-      servicosHTML = `
-        <p>CO<sub>2</sub> retido: ${ Math.round(1000 * tree.co2) } kg</p>
-        <p>Água de chuva interceptada: ${ Math.round(tree.stormwater) } L</p>
-        <p>Energia conservada: ${ Math.round(tree.conserved_energy) } kWh</p>
-        <p>Índice de biodiversidade: ${ Math.round(tree.biodiversity) } un</p>
-      `;
-    }
-    
-    // ATUALIZAÇÃO 1: Preenche o <p> APENAS com o texto
+    // Preenche os dados da árvore (sem serviços ecossistêmicos, já estão em cima)
     document.getElementById("dados").innerHTML = `
       <p>Id. da árvore: ${tree.numero}</p>
       <p>Nome científico: ${tree.nome_cientifico}</p>
       <p>Diâmetro: ${tree.dap} cm</p>
       <p>Altura: ${tree.altura} m</p>
       <p>Google maps: <a href="${google_maps_url}" class="underline text-blue-500">link</a></p>
-      <p style="font-weight: bold; margin-top: 1rem;">Serviços Ecossistêmicos:</p>
-      ${servicosHTML}
       <p>Plantado por: ${tree.plantado_por } </p>
       ${laudos.length > 0 ? `<p>Laudos: ${laudos.join(', ')} </p>` : ""}
       ${img_links.length > 0 ? `<p style="font-weight: bold;">Imagens</p> ${img_links.join('')}` : ""}
@@ -533,6 +644,10 @@ crossorigin=""></script>
   let lastClickedCircle;
   const circleLayerGroup = L.layerGroup();
   const originalCircles = []
+  
+  // Estado de seleção
+  let selectedTreeId = null;
+  let selectedNeighborhoodId = null;
 
   for (let [tree_id, tree] of tree_map) {
     circle = L.circle(
