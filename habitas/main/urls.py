@@ -32,4 +32,7 @@ urlpatterns = [
     path('notificacoes/', views.listar_notificacoes, name='listar_notificacoes'),
     path('notificacoes/<int:notificacao_id>/analisar/', views.analisar_notificacao, name='analisar_notificacao'),
     path('notificacoes/<int:notificacao_id>/resolver/', views.resolver_notificacao, name='resolver_notificacao'),
+
+    # Política de Privacidade
+    path('politica-privacidade/', views.politica_privacidade, name='politica_privacidade'),
 ]

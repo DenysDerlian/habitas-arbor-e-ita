@@ -585,3 +585,7 @@ def resolver_notificacao(request, notificacao_id):
         "notificacoes/resolver.html",
         {"notificacao": notificacao, "historico": notificacao.historico.all()},
     )
+
+def politica_privacidade(request):
+    """Exibe a política de privacidade"""
+    return render(request, "privacy_policy.html")
