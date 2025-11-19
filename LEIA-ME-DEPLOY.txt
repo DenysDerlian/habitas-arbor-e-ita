@@ -1,0 +1,38 @@
+═══════════════════════════════════════════════════════════════
+    ARQUIVOS PARA DEPLOY - HABITAS ARBOR-E-ITA
+═══════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════
+📁 O QUE ENVIAR PARA O SERVIDOR
+═══════════════════════════════════════════════════════════════
+
+1. Toda a pasta "habitas/" (com tudo dentro)
+2. Arquivo "requirements.txt" (na raiz)
+3. Arquivo "manage.py" (dentro de habitas/)
+4. Este arquivo e os outros arquivos de documentação
+
+═══════════════════════════════════════════════════════════════
+🚀 PASSOS RÁPIDOS NO SERVIDOR
+═══════════════════════════════════════════════════════════════
+
+1. Criar ambiente virtual:
+   python3 -m venv venv
+   source venv/bin/activate
+
+2. Instalar dependências:
+   pip install -r requirements.txt
+
+3. Configurar settings.py:
+   - DEBUG = False
+   - ALLOWED_HOSTS = ['seu-dominio.com']
+   - Configurar banco de dados
+
+4. Aplicar migrações:
+   python manage.py migrate
+
+5. Coletar arquivos estáticos:
+   python manage.py collectstatic --noinput
+
+6. Criar superusuário (se necessário):
+   python manage.py createsuperuser
+
