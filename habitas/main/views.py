@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.db.models import Count
 from django.utils import timezone
 from django.conf import settings
+from django.http import JsonResponse
+import json
 import sys
 from pathlib import Path
 from .models import (
@@ -50,10 +52,11 @@ def index(request):
         filters["dap__gte"] = request.GET["dap_min"]
     if request.GET.get("dap_max"):
         filters["dap__lte"] = request.GET["dap_max"]
+    # Otimização: carrega apenas posições inicialmente
     trees = (
         Tree.objects.filter(**filters)
-        .select_related("species")
         .annotate(n_posts=Count("posts"))
+        .values("id", "latitude", "longitude", "n_posts")
     )
     ecosystem_services = EcosystemServiceConfig.objects.filter(ativo=True).order_by(
         "ordem_exibicao"
@@ -70,6 +73,44 @@ def index(request):
         "request": request,
     }
     return render(request, "index.html", context)
+
+
+def api_tree_detail(request, tree_id):
+    """API endpoint para buscar dados completos de uma árvore"""
+    try:
+        tree = Tree.objects.select_related("species").annotate(
+            n_posts=Count("posts")
+        ).get(id=tree_id)
+        
+        # Prepara dados da árvore
+        tree_data = {
+            "id": tree.id,
+            "nome_popular": tree.nome_popular,
+            "nome_cientifico": tree.nome_cientifico,
+            "dap": str(tree.dap),
+            "altura": str(tree.altura),
+            "data_da_coleta": "",
+            "latitude": tree.latitude,
+            "longitude": tree.longitude,
+            "numero": tree.N_placa,
+            "n_comentarios": tree.n_posts,
+            "color": "yellow" if tree.n_posts > 0 else "green",
+            "plantado_por": tree.plantado_por,
+            "imagens": [img.strip() for img in tree.imagem.split(',') if img.strip()] if tree.imagem else [],
+            "laudos": [laudo.strip() for laudo in tree.laudo.split(',') if laudo.strip()] if tree.laudo else [],
+            "services": tree.get_all_ecosystem_services(),
+            # Compatibilidade com código antigo
+            "co2": tree.stored_co2,
+            "stormwater": tree.stormwater_intercepted,
+            "conserved_energy": tree.conserved_energy,
+            "biodiversity": tree.biodiversity,
+        }
+        
+        return JsonResponse(tree_data)
+    except Tree.DoesNotExist:
+        return JsonResponse({"error": "Árvore não encontrada"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 # ==================== AUTENTICAÇÃO ====================

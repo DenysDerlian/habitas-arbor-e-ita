@@ -166,10 +166,14 @@ crossorigin=""></script>
   };
 
   function renderStatistics(circles) {
-    const species = new Set(circles.map(a => a.tree_species)).size;
-    const total_n_posts = circles.map(a => a.n_posts).reduce((a,b)=>a+b, 0);
+    // Filtra apenas círculos com dados de espécie carregados para estatísticas precisas
+    const circlesWithSpecies = circles.filter(c => c.tree_species);
+    const species = circlesWithSpecies.length > 0 
+      ? new Set(circlesWithSpecies.map(a => a.tree_species)).size 
+      : 0;
+    const total_n_posts = circles.map(a => a.n_posts || 0).reduce((a,b)=>a+b, 0);
     
-    // Calcula serviços dinamicamente
+    // Calcula serviços dinamicamente apenas para círculos com dados completos
     const servicesData = {};
     for (const [codigo, config] of Object.entries(ecosystemServicesConfig)) {
       const values = circles.map(a => {
@@ -356,15 +360,63 @@ crossorigin=""></script>
       layer.on('click', highlightNeighborhood);
   });
 
-  function onMapClick(index) {
-    tree = tree_map.get(index);
+  async function loadTreeData(tree_id) {
+    // Verifica se os dados já foram carregados
+    const tree = tree_map.get(tree_id);
+    if (tree && tree.loaded) {
+      return tree;
+    }
+
+    // Carrega dados completos via API
+    try {
+      const response = await fetch(`/api/tree/${tree_id}/`);
+      if (!response.ok) {
+        throw new Error('Erro ao carregar dados da árvore');
+      }
+      const treeData = await response.json();
+      
+      // Atualiza o tree_map com dados completos
+      const updatedTree = {
+        ...tree,
+        ...treeData,
+        imagens: treeData.imagens || [],
+        laudos: treeData.laudos || [],
+        loaded: true
+      };
+      tree_map.set(tree_id, updatedTree);
+      
+      // Atualiza o círculo com informações adicionais se necessário
+      const circle = originalCircles.find(c => c.tree_id === tree_id);
+      if (circle) {
+        circle.tree_species = updatedTree.nome_cientifico;
+        circle.n_posts = updatedTree.n_comentarios;
+        circle.services = updatedTree.services;
+        if (updatedTree.services) {
+          circle.stored_co2 = updatedTree.services['co2_armazenado'] ? updatedTree.services['co2_armazenado'].valor_fisico : updatedTree.co2;
+          circle.stormwater_intercepted = updatedTree.services['chuva_interceptada'] ? updatedTree.services['chuva_interceptada'].valor_fisico : updatedTree.stormwater;
+          circle.conserved_energy = updatedTree.services['energia_conservada'] ? updatedTree.services['energia_conservada'].valor_fisico : updatedTree.conserved_energy;
+          circle.biodiversity = updatedTree.services['biodiversidade'] ? updatedTree.services['biodiversidade'].valor_fisico : updatedTree.biodiversity;
+        }
+      }
+      
+      return updatedTree;
+    } catch (error) {
+      console.error('Erro ao carregar dados da árvore:', error);
+      return tree; // Retorna dados básicos em caso de erro
+    }
+  }
+
+  async function onMapClick(index) {
+    // Carrega dados completos se necessário
+    const tree = await loadTreeData(index);
+    
     Unicorn.call("posts", "update", tree.id);
     let img_links = [];
-    for (let i = 0; i < tree.imagens.length; i++) {
+    for (let i = 0; i < (tree.imagens || []).length; i++) {
       img_links.push(`<img src="https://arvores.sjc.sp.gov.br${tree.imagens[i]}">`);
     }
     let laudos = [];
-    for (let i = 0; i < tree.laudos.length; i++) {
+    for (let i = 0; i < (tree.laudos || []).length; i++) {
       laudos.push(`<a href="https://arvores.sjc.sp.gov.br${tree.laudos[i]}" class="underline text-blue-500">Laudo ${i + 1}</a>`);
     }
     google_maps_url = create_google_maps_url(tree.latitude, tree.longitude);
@@ -462,31 +514,15 @@ crossorigin=""></script>
 
   tree_map = new Map();
 
+  // Otimização: carrega apenas posições inicialmente
   {% for tree in trees %}
-    // Usa serviços dinâmicos do BD - calculado no backend
-    const tree_services_{{ tree.id }} = {{ tree.get_all_ecosystem_services_json|safe }};
-    
     tree_obj = {
       id: {{ tree.id }},
-      nome_popular: "{{ tree.nome_popular }}".trim(),
-      nome_cientifico: "{{ tree.nome_cientifico }}".trim(),
-      dap: "{{ tree.dap }}",
-      altura: "{{ tree.altura }}",
-      data_da_coleta: "{{ tree.data_da_coleta }}",
-      latitude: "{{ tree.latitude }}",
-      longitude: "{{ tree.longitude }}",
-      numero: {{ tree.N_placa }},
+      latitude: {{ tree.latitude }},
+      longitude: {{ tree.longitude }},
       n_comentarios: {{ tree.n_posts }},
-      // Serviços dinâmicos do BD (mantém compatibilidade com código antigo)
-      services: tree_services_{{ tree.id }},
-      co2: {{ tree.stored_co2 }},  // Compatibilidade
-      stormwater: {{ tree.stormwater_intercepted }},  // Compatibilidade
-      conserved_energy: {{ tree.conserved_energy }},  // Compatibilidade
-      biodiversity: {{ tree.biodiversity }},  // Compatibilidade
       color: {{ tree.n_posts }} > 0 ? "yellow" : "green",
-      plantado_por: "{{ tree.plantado_por }}",
-      imagens: "{{ tree.imagem }}".split(',').map(path => path.trim()).filter(val => val !== ""),
-      laudos: "{{ tree.laudo }}".split(',').map(path => path.trim()).filter(val => val !== ""),
+      loaded: false  // Flag para indicar se os dados completos foram carregados
     };
 
     tree_map.set(tree_obj.id, tree_obj)
@@ -510,17 +546,16 @@ crossorigin=""></script>
       }
     )
     circle.tree_id = tree_id;
-    circle.tree_species = tree.nome_cientifico;
+    circle.tree_species = tree.nome_cientifico || '';  // Será atualizado quando carregar dados completos
     circle.n_posts = tree.n_comentarios;
-    // Serviços dinâmicos do BD
-    circle.services = tree.services;
-    // Compatibilidade com código antigo
-    circle.stored_co2 = tree.services && tree.services['co2_armazenado'] ? tree.services['co2_armazenado'].valor_fisico : tree.co2;
-    circle.stormwater_intercepted = tree.services && tree.services['chuva_interceptada'] ? tree.services['chuva_interceptada'].valor_fisico : tree.stormwater;
-    circle.conserved_energy = tree.services && tree.services['energia_conservada'] ? tree.services['energia_conservada'].valor_fisico : tree.conserved_energy;
-    circle.biodiversity = tree.services && tree.services['biodiversidade'] ? tree.services['biodiversidade'].valor_fisico : tree.biodiversity;
+    // Serviços serão carregados sob demanda
+    circle.services = null;
+    circle.stored_co2 = 0;
+    circle.stormwater_intercepted = 0;
+    circle.conserved_energy = 0;
+    circle.biodiversity = 0;
 
-    circle.on("click", function(){
+    circle.on("click", async function(){
       if (lastClickedCircle){
         lastClickedCircle.setStyle({
           color: tree_map.get(lastClickedCircle.tree_id).color,
@@ -528,7 +563,7 @@ crossorigin=""></script>
         });
       }
 
-      onMapClick(tree_id);
+      await onMapClick(tree_id);
       lastClickedCircle = this;
       this.setStyle({color: 'red', fillColor: '#f00'});
     })

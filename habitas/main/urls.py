@@ -4,6 +4,9 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     
+    # API
+    path('api/tree/<int:tree_id>/', views.api_tree_detail, name='api_tree_detail'),
+    
     # Autenticação
     path('register/cidadao/', views.register_cidadao, name='register_cidadao'),
     path('register/tecnico/', views.register_tecnico, name='register_tecnico'),
