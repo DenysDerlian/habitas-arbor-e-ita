@@ -4,6 +4,9 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     
+    # API
+    path('api/tree/<int:tree_id>/', views.api_tree_detail, name='api_tree_detail'),
+    
     # Autenticação
     path('register/cidadao/', views.register_cidadao, name='register_cidadao'),
     path('register/tecnico/', views.register_tecnico, name='register_tecnico'),
@@ -12,11 +15,24 @@ urlpatterns = [
     
     # Dashboards
     path('dashboard/gestor/', views.dashboard_gestor, name='dashboard_gestor'),
+    path('dashboard/gestor/atualizar-arvores/', views.atualizar_arvores, name='atualizar_arvores'),
     path('dashboard/tecnico/', views.dashboard_tecnico, name='dashboard_tecnico'),
     
     # Gestão de Técnicos (Nível 1)
     path('gestao/tecnicos/pendentes/', views.listar_tecnicos_pendentes, name='listar_tecnicos_pendentes'),
     path('gestao/tecnicos/<int:user_id>/aprovar/', views.aprovar_tecnico, name='aprovar_tecnico'),
+    
+    # Gestão de Serviços Ecossistêmicos e Variáveis
+    path('gestao/configuracoes/', views.configurar_servicos_variaveis, name='configurar_servicos_variaveis'),
+    path('gestao/configuracoes/servicos/criar/', views.criar_servico_ecossistemico, name='criar_servico_ecossistemico'),
+    path('gestao/configuracoes/servicos/<int:servico_id>/editar/', views.editar_servico_ecossistemico, name='editar_servico_ecossistemico'),
+    path('gestao/configuracoes/servicos/<int:servico_id>/excluir/', views.excluir_servico_ecossistemico, name='excluir_servico_ecossistemico'),
+    path('gestao/configuracoes/variaveis/criar/', views.criar_variavel_customizada, name='criar_variavel_customizada'),
+    path('gestao/configuracoes/variaveis/<int:variavel_id>/editar/', views.editar_variavel_customizada, name='editar_variavel_customizada'),
+    path('gestao/configuracoes/variaveis/<int:variavel_id>/excluir/', views.excluir_variavel_customizada, name='excluir_variavel_customizada'),
+    path('gestao/configuracoes/variaveis/<int:variavel_id>/valor-especie/', views.definir_valor_especie, name='definir_valor_especie'),
+    path('gestao/configuracoes/variaveis/<int:variavel_id>/valor-especie/<int:especie_id>/remover/', views.remover_valor_especie, name='remover_valor_especie'),
+    path('api/validar-formula/', views.validar_formula, name='validar_formula'),
     
     # Laudos
     path('laudos/criar/<int:tree_id>/', views.criar_laudo, name='criar_laudo'),

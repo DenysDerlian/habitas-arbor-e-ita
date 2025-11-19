@@ -1,0 +1,159 @@
+{% extends '_base.html' %}
+{% load static %}
+
+{% block title %}Configurar Serviços e Variáveis{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 overflow-y-auto" style="max-height: calc(100vh - 120px);">
+  <h1 class="text-3xl font-bold mb-8 text-gray-800">Configurar Serviços Ecossistêmicos e Variáveis</h1>
+  
+  <!-- Sistema de Abas -->
+  <div class="mb-6">
+    <div class="flex border-b border-gray-200">
+      <button id="tab-servicos" onclick="showTab('servicos')" class="px-6 py-3 font-medium text-sm border-b-2 border-emerald-600 text-emerald-600">
+        Serviços Ecossistêmicos
+      </button>
+      <button id="tab-variaveis" onclick="showTab('variaveis')" class="px-6 py-3 font-medium text-sm text-gray-500 hover:text-gray-700">
+        Variáveis Customizadas
+      </button>
+    </div>
+  </div>
+
+  <!-- Aba Serviços Ecossistêmicos -->
+  <div id="content-servicos" class="tab-content">
+    <div class="mb-4 flex justify-between items-center">
+      <h2 class="text-2xl font-semibold text-gray-700">Serviços Ecossistêmicos</h2>
+      <a href="{% url 'criar_servico_ecossistemico' %}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-medium">
+        + Adicionar Serviço
+      </a>
+    </div>
+
+    {% if servicos %}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for servico in servicos %}
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ servico.nome }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ servico.codigo }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ servico.get_categoria_display }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if servico.ativo %}
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Ativo</span>
+              {% else %}
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Inativo</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="{% url 'editar_servico_ecossistemico' servico.id %}" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
+              <a href="{% url 'excluir_servico_ecossistemico' servico.id %}" class="text-red-600 hover:text-red-900" onclick="return confirm('Tem certeza que deseja excluir este serviço?');">Excluir</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow p-8 text-center">
+      <p class="text-gray-500">Nenhum serviço ecossistêmico cadastrado ainda.</p>
+      <a href="{% url 'criar_servico_ecossistemico' %}" class="mt-4 inline-block bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-medium">
+        Criar Primeiro Serviço
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Aba Variáveis Customizadas -->
+  <div id="content-variaveis" class="tab-content hidden">
+    <div class="mb-4 flex justify-between items-center">
+      <h2 class="text-2xl font-semibold text-gray-700">Variáveis Customizadas</h2>
+      <a href="{% url 'criar_variavel_customizada' %}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-medium">
+        + Adicionar Variável
+      </a>
+    </div>
+
+    {% if variaveis %}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidade</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for variavel in variaveis %}
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ variavel.nome }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ variavel.codigo }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ variavel.get_tipo_dado_display }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ variavel.unidade_medida|default:"-" }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if variavel.ativo %}
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Ativo</span>
+              {% else %}
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Inativo</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="{% url 'editar_variavel_customizada' variavel.id %}" class="text-blue-600 hover:text-blue-900 mr-3">Editar</a>
+              <a href="{% url 'excluir_variavel_customizada' variavel.id %}" class="text-red-600 hover:text-red-900" onclick="return confirm('Tem certeza que deseja excluir esta variável?');">Excluir</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow p-8 text-center">
+      <p class="text-gray-500">Nenhuma variável customizada cadastrada ainda.</p>
+      <a href="{% url 'criar_variavel_customizada' %}" class="mt-4 inline-block bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-medium">
+        Criar Primeira Variável
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function showTab(tabName) {
+  // Esconde todos os conteúdos
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.add('hidden');
+  });
+  
+  // Remove estilo ativo de todas as abas
+  document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+    btn.classList.remove('border-emerald-600', 'text-emerald-600');
+    btn.classList.add('text-gray-500');
+  });
+  
+  // Mostra conteúdo da aba selecionada
+  document.getElementById('content-' + tabName).classList.remove('hidden');
+  
+  // Adiciona estilo ativo na aba selecionada
+  const activeTab = document.getElementById('tab-' + tabName);
+  activeTab.classList.remove('text-gray-500');
+  activeTab.classList.add('border-emerald-600', 'text-emerald-600');
+}
+
+// Mostra aba de serviços por padrão
+document.addEventListener('DOMContentLoaded', function() {
+  showTab('servicos');
+});
+</script>
+{% endblock %}
+
